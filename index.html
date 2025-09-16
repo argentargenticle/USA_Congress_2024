@@ -5,77 +5,52 @@
   <title>2025 USA Congress Apportionment Diagram</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    .seat {
-      stroke: #999;
-      cursor: pointer;
-    }
-    .D {
-      fill: #1f77b4;
-    }
-    .R {
-      fill: #d62728;
-    }
-    .Other {
-      fill: grey;
-    }
+    .seat { stroke: #999; cursor: pointer; }
+    .Democrat { fill: #1f77b4; }
+    .Republican { fill: #d62728; }
+    .Other { fill: grey; }
     .tooltip {
-      position: absolute;
-      background: white;
-      border: 1px solid #999;
-      padding: 5px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      position: absolute; background: white; border: 1px solid #999;
+      padding: 5px; pointer-events: none; opacity: 0; transition: opacity 0.3s ease;
     }
   </style>
 </head>
 <body>
-  <h2>2025 USA Congress Election Apportionment Diagram</h2>
+  <h2>2025 USA Congress Apportionment Diagram</h2>
   <div id="chart"></div>
   <div class="tooltip" id="tooltip"></div>
-
   <script>
-    const APIKEY = 'EnNgUKjRt1I9AHGiQUPJ2U01p10h1ccB0MtcnXvm'; // Replace with your API key
-    const MEMBERS_API = 'https://api.congress.gov/v3/members?congress=119';
-
     const svgWidth = 800;
     const seatSize = 20;
     const seatsPerRow = 20;
-
     const tooltip = d3.select("#tooltip");
     const svg = d3.select("#chart").append("svg")
       .attr("width", svgWidth)
       .attr("height", 600);
 
-    // Fetch member data from congress.gov API
-    async function fetchMembers() {
-      const response = await fetch(MEMBERS_API, {
-        headers: {
-          'X-API-Key': APIKEY
-        }
-      });
-      if(!response.ok) {
-        throw new Error('Failed to fetch members');
-      }
-      const json = await response.json();
-      return json.members || json.results || [];
-    }
+    // Load from shared JSON URL or local file
+    const dataUrl = 'https://unitedstates.github.io/congress-legislators/legislators-current.json';
 
-    // Process members and create seat data
-    function processSeats(members) {
-      return members.map(member => {
-        return {
-          party: member.party || 'Other',
-          state: member.state || 'Unknown',
-          name: member.name || 'Unknown',
-        };
-      });
-    }
+    d3.json(dataUrl).then(members => {
+      // Flatten to one entry per current term (active 2025), filter as needed
+      const activeMembers = members.flatMap(m => 
+        m.terms.filter(term => {
+          // Term current if end >= 2025-01-01
+          return new Date(term.end) >= new Date('2025-01-01');
+        }).map(term => ({
+          party: term.party || 'Other',
+          state: term.state || 'Unknown',
+          name: m.name.official_full || (m.name.first + ' ' + m.name.last),
+          // Extra fields if needed:
+          type: term.type || '',
+          district: term.district || '',
+          caucus: term.caucus || '', // present in some
+          committees: term.committees || [] // add if you parse committees elsewhere
+        }))
+      );
 
-    // Render the interactive apportionment diagram
-    function renderDiagram(seats) {
       svg.selectAll("rect")
-        .data(seats)
+        .data(activeMembers)
         .join("rect")
         .attr("class", d => "seat " + d.party)
         .attr("width", seatSize - 2)
@@ -84,20 +59,14 @@
         .attr("y", (_, i) => Math.floor(i / seatsPerRow) * seatSize + 20)
         .on("mouseover", function(event, d) {
           tooltip.style("opacity", 1)
-            .html(`<strong>${d.name}</strong><br/>State: ${d.state}<br/>Party: ${d.party}`)
+            .html(`<strong>${d.name}</strong><br/>State: ${d.state}<br/>Party: ${d.party}<br/>Type: ${d.type}<br/>District: ${d.district}<br/>Caucus: ${d.caucus || 'N/A'}`)
             .style("left", (event.pageX + 10) + "px")
             .style("top", (event.pageY - 30) + "px");
         })
         .on("mouseout", () => tooltip.style("opacity", 0));
-    }
-
-    // Main execution
-    fetchMembers()
-      .then(members => {
-        const seats = processSeats(members);
-        renderDiagram(seats);
-      })
-      .catch(error => console.error(error));
+    }).catch(error => {
+      console.error('Failed to load members data:', error);
+    });
   </script>
 </body>
 </html>
