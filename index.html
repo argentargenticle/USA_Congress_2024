@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Hemicycle US House Members 2025 with Clickable Seats</title>
+<title>Hemicycle US House Members 2025 with Clickable Seats and Search</title>
 <style>
   body {
     display: flex;
@@ -13,6 +13,26 @@
     background: #f0f0f0;
     font-family: Arial, sans-serif;
     margin: 0;
+  }
+  #search-container {
+    margin: 15px 0;
+  }
+  #search-input {
+    font-size: 14px;
+	margin:0px;
+    padding: 6px 8px;
+    width: 300px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+  }
+  #clear-search {
+    margin-left: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: white;
   }
   .hemicycle {
     position: relative;
@@ -29,6 +49,7 @@
     box-shadow: 0 0 3px rgba(0,0,0,0.3);
     transform: translate(-50%, -50%);
     cursor: pointer;
+    transition: opacity 0.3s;
   }
   .democrat {
     background: #0074D9; /* blue */
@@ -38,6 +59,11 @@
   }
   .vacant {
     background: #AAAAAA; /* gray */
+  }
+  .highlight {
+    box-shadow: 0 0 10px 3px yellow;
+    border-color: gold;
+    z-index: 10;
   }
   /* Tooltip container */
   .tooltip {
@@ -57,21 +83,32 @@
     font-size: 16px;
     font-weight: bold;
   }
+  #header{
+	margin: 10px 0px 0px 0px;
+  }
 </style>
 </head>
 <body>
-<h1>USA Congress - House 2025 - 119th Congress</h1>
+<h1 id="header">USA Congress - House 2025 - 119th Congress</h1>
+
+<div id="search-container">
+  <input type="text" id="search-input" placeholder="Search representative by name..." />
+  <button id="clear-search">Clear</button>
+</div>
+
 <div class="hemicycle" id="hemicycle"></div>
 <div class="summary" id="summary"></div>
 <div class="tooltip" id="tooltip"></div>
+
 <script>
   const hemicycle = document.getElementById('hemicycle');
   const tooltip = document.getElementById('tooltip');
   const summary = document.getElementById('summary');
+  const searchInput = document.getElementById('search-input');
+  const clearSearchBtn = document.getElementById('clear-search');
   const numberOfRows = 11;
   const startRadius = 110;
   const rowGap = 55;
-
   const votingStates = new Set([
     "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
     "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
@@ -87,20 +124,21 @@
     }
   }
 
+  let houseMembers = [];
+  let seatElements = [];
+
   fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
     .then(response => response.json())
     .then(data => {
       const currentDate = new Date();
-
       // Filter voting House members only from states (no non-voting delegates)
-      const houseMembers = data.filter(member => {
+      houseMembers = data.filter(member => {
         return member.terms.some(term =>
           term.type === "rep" &&
           (!term.end || new Date(term.end) > currentDate) &&
           votingStates.has(term.state)
         );
       });
-
       // Sort by state then district for consistent ordering
       houseMembers.sort((a,b) => {
         const aTerm = a.terms.find(t => t.type === "rep");
@@ -111,103 +149,144 @@
           return aTerm.state.localeCompare(bTerm.state);
         }
       });
-
-      // Count members by party
-      let demCount = 0, repCount = 0, vacantCount = 0;
-      houseMembers.forEach(member => {
-        const lastTerm = member.terms[member.terms.length - 1];
-        const party = lastTerm.party;
-        if(party === 'Democrat') demCount++;
-        else if(party === 'Republican') repCount++;
-        else vacantCount++;
-      });
-
-      const totalSeats = houseMembers.length;
-
-      const radii = [];
-      for(let i=0; i<numberOfRows; i++) {
-        radii.push(startRadius + i * rowGap);
-      }
-
-      const arcLengths = radii.map(r => Math.PI * r);
-      const totalArcLength = arcLengths.reduce((a,b) => a+b, 0);
-      let seatsPerRow = arcLengths.map(arc => Math.round((arc / totalArcLength) * totalSeats));
-
-      let seatDifference = seatsPerRow.reduce((a,b) => a+b, 0) - totalSeats;
-      while(seatDifference !== 0) {
-        for(let i=0; i<seatsPerRow.length && seatDifference !== 0; i++) {
-          if(seatDifference > 0 && seatsPerRow[i] > 1) {
-            seatsPerRow[i]--;
-            seatDifference--;
-          } else if(seatDifference < 0) {
-            seatsPerRow[i]++;
-            seatDifference++;
-          }
-        }
-      }
-
-      const centerX = hemicycle.clientWidth / 2;
-      const centerY = hemicycle.clientHeight;
-
-      let seatGlobalIndex = 0;
-
-      function showTooltip(seat, member) {
-        tooltip.style.opacity = '1';
-        tooltip.innerText = `${member.name.first} ${member.name.last}\n${member.party || member.terms[member.terms.length-1].party}\n${member.terms[member.terms.length-1].state}-${member.terms[member.terms.length-1].district || 'At Large'}`;
-        const rect = seat.getBoundingClientRect();
-        const bodyRect = document.body.getBoundingClientRect();
-        tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
-        tooltip.style.top = `${rect.top - bodyRect.top - 30}px`;
-      }
-
-      function hideTooltip() {
-        tooltip.style.opacity = '0';
-      }
-
-      for(let row=0; row < numberOfRows; row++) {
-        const radius = radii[row];
-        const seats = seatsPerRow[row];
-        for(let seatIndex=0; seatIndex < seats; seatIndex++) {
-          if(seatGlobalIndex >= totalSeats) break;
-
-          const member = houseMembers[seatGlobalIndex];
-          const lastTerm = member.terms[member.terms.length -1];
-          const party = lastTerm.party;
-          const partyCls = partyClass(party);
-          const angle = Math.PI - seatIndex * Math.PI / (seats - 1);
-          const x = centerX + radius * Math.cos(angle);
-          const y = centerY - radius * Math.sin(angle);
-
-          const seat = document.createElement('div');
-          seat.className = 'seat ' + partyCls;
-          seat.style.left = x + 'px';
-          seat.style.top = y + 'px';
-          seat.title = `${member.name.first} ${member.name.last} (${party})`;
-
-          // Navigate to new page on click with format STATE-DISTRICT.html or STATE.html if district missing
-          seat.addEventListener('click', () => {
-            const state = lastTerm.state;
-            const district = lastTerm.district;
-            const fileName = district && district !== 0 ? `house/${state}-${district}.html` : `${state}.html`;
-            window.location.href = fileName;
-          });
-
-          seat.addEventListener('mouseenter', () => showTooltip(seat, member));
-          seat.addEventListener('mouseleave', hideTooltip);
-
-          hemicycle.appendChild(seat);
-          seatGlobalIndex++;
-        }
-      }
-
-      summary.textContent = `Republicans: ${repCount} — Democrats: ${demCount} — Vacant: ${vacantCount}`;
-      window.addEventListener('scroll', hideTooltip);
-      window.addEventListener('click', hideTooltip);
+      drawHemicycle();
+      updateSummary();
     })
     .catch(err => {
       console.error("Failed to load legislators data:", err);
       hemicycle.innerText = "Failed to load data.";
     });
+
+  function drawHemicycle() {
+    hemicycle.innerHTML = ''; // clear
+    seatElements = [];
+    const totalSeats = houseMembers.length;
+    const radii = [];
+    for(let i=0; i<numberOfRows; i++) {
+      radii.push(startRadius + i * rowGap);
+    }
+    const arcLengths = radii.map(r => Math.PI * r);
+    const totalArcLength = arcLengths.reduce((a,b) => a+b, 0);
+    let seatsPerRow = arcLengths.map(arc => Math.round((arc / totalArcLength) * totalSeats));
+    let seatDifference = seatsPerRow.reduce((a,b) => a+b, 0) - totalSeats;
+    while(seatDifference !== 0) {
+      for(let i=0; i<seatsPerRow.length && seatDifference !== 0; i++) {
+        if(seatDifference > 0 && seatsPerRow[i] > 1) {
+          seatsPerRow[i]--;
+          seatDifference--;
+        } else if(seatDifference < 0) {
+          seatsPerRow[i]++;
+          seatDifference++;
+        }
+      }
+    }
+    const centerX = hemicycle.clientWidth / 2;
+    const centerY = hemicycle.clientHeight;
+    let seatGlobalIndex = 0;
+
+    for(let row=0; row < numberOfRows; row++) {
+      const radius = radii[row];
+      const seats = seatsPerRow[row];
+      for(let seatIndex=0; seatIndex < seats; seatIndex++) {
+        if(seatGlobalIndex >= totalSeats) break;
+        const member = houseMembers[seatGlobalIndex];
+        const lastTerm = member.terms[member.terms.length -1];
+        const party = lastTerm.party;
+        const partyCls = partyClass(party);
+        const angle = Math.PI - seatIndex * Math.PI / (seats - 1);
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY - radius * Math.sin(angle);
+        const seat = document.createElement('div');
+        seat.className = 'seat ' + partyCls;
+        seat.style.left = x + 'px';
+        seat.style.top = y + 'px';
+        seat.title = `${member.name.first} ${member.name.last} (${party})`;
+        // Navigate to new page on click with format STATE-DISTRICT.html or STATE.html if district missing
+        seat.addEventListener('click', () => {
+          const state = lastTerm.state;
+          const district = lastTerm.district;
+          const fileName = district && district !== 0 ? `house/${state}-${district}.html` : `${state}.html`;
+          window.location.href = fileName;
+        });
+        seat.addEventListener('mouseenter', () => showTooltip(seat, member));
+        seat.addEventListener('mouseleave', hideTooltip);
+        hemicycle.appendChild(seat);
+        seatElements.push({seat, member});
+        seatGlobalIndex++;
+      }
+    }
+  }
+
+  function showTooltip(seat, member) {
+    tooltip.style.opacity = '1';
+    tooltip.innerText = `${member.name.first} ${member.name.last}\n${member.party || member.terms[member.terms.length-1].party}\n${member.terms[member.terms.length-1].state}-${member.terms[member.terms.length-1].district || 'At Large'}`;
+    const rect = seat.getBoundingClientRect();
+    const bodyRect = document.body.getBoundingClientRect();
+    tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
+    tooltip.style.top = `${rect.top - bodyRect.top - 30}px`;
+  }
+
+  function hideTooltip() {
+    tooltip.style.opacity = '0';
+  }
+
+  function updateSummary() {
+    let demCount=0, repCount=0, vacantCount=0;
+    houseMembers.forEach(member => {
+      const lastTerm = member.terms[member.terms.length - 1];
+      const party = lastTerm.party;
+      if(party === 'Democrat') demCount++;
+      else if(party === 'Republican') repCount++;
+      else vacantCount++;
+    });
+    summary.textContent = `Republicans: ${repCount} — Democrats: ${demCount} — Vacant: ${vacantCount}`;
+  }
+
+  function searchRepresentatives(query) {
+    const lowerQuery = query.toLowerCase().trim();
+    seatElements.forEach(({seat, member}) => {
+      const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
+      if(fullName.includes(lowerQuery) || lowerQuery === '') {
+        seat.style.opacity = '1';
+        seat.classList.remove('highlight');
+      } else {
+        seat.style.opacity = '0.15';
+        seat.classList.remove('highlight');
+      }
+    });
+    if(lowerQuery === '') return;
+    // Highlight exact or best matches
+    let found = false;
+    seatElements.forEach(({seat, member}) => {
+      const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
+      if(fullName === lowerQuery) {
+        seat.style.opacity = '1';
+        seat.classList.add('highlight');
+        found = true;
+      }
+    });
+    if(!found) {
+      // Highlight partial matches
+      seatElements.forEach(({seat, member}) => {
+        const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
+        if(fullName.includes(lowerQuery)) {
+          seat.classList.add('highlight');
+        }
+      });
+    }
+  }
+
+  searchInput.addEventListener('input', (e) => {
+    searchRepresentatives(e.target.value);
+  });
+
+  clearSearchBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    searchRepresentatives('');
+  });
+
+  window.addEventListener('scroll', hideTooltip);
+  window.addEventListener('click', hideTooltip);
 </script>
 </body>
 </html>
