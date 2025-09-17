@@ -1,238 +1,212 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>2025 USA House Hemicycle Seating Chart</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    .seat {
-      stroke: #999;
-      cursor: pointer;
-    }
-    .Democrat {
-      fill: #1f77b4;
-    }
-    .Republican {
-      fill: #d62728;
-    }
-    .Other {
-      fill: grey;
-    }
-    text {
-      font-size: 8px;
-      fill: white;
-      pointer-events: none;
-      user-select: none;
-    }
-    .tooltip {
-      position: absolute; 
-      background: white; 
-      border: 1px solid #999;
-      padding: 6px; 
-      pointer-events: none; 
-      opacity: 0; 
-      transition: opacity 0.3s ease;
-      font-size: 12px;
-      box-shadow: 1px 1px 5px rgba(0,0,0,0.2);
-    }
-    #chart {
-      margin: 10px auto;
-      max-width: 900px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hemicycle US House Members 2025 with Clickable Seats</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    background: #f0f0f0;
+    font-family: Arial, sans-serif;
+    margin: 0;
+  }
+  .hemicycle {
+    position: relative;
+    width: 650px;
+    height: 750px;
+    margin-bottom: 20px;
+  }
+  .seat {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .democrat {
+    background: #0074D9; /* blue */
+  }
+  .republican {
+    background: #FF4136; /* red */
+  }
+  .vacant {
+    background: #AAAAAA; /* gray */
+  }
+  /* Tooltip container */
+  .tooltip {
+    position: absolute;
+    background: rgba(50,50,50,0.9);
+    color: white;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .summary {
+    font-size: 16px;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-  <h2>2025 USA House Hemicycle Seating Chart (435 Seats)</h2>
-  <div id="chart"></div>
-  <div class="tooltip" id="tooltip"></div>
-  <script>
-    const width = 900, height = 600;
-    const svg = d3.select("#chart").append("svg")
-      .attr("width", width)
-      .attr("height", height);
-    
-    // Pivot point near bottom center for hemicycle
-    const pivotX = width / 2;
-    const pivotY = height - 50;
-    const seatSize = 14;
-    const seatPadding = 4;
-    const rows = 6;
+<div class="hemicycle" id="hemicycle"></div>
+<div class="summary" id="summary"></div>
+<div class="tooltip" id="tooltip"></div>
+<script>
+  const hemicycle = document.getElementById('hemicycle');
+  const tooltip = document.getElementById('tooltip');
+  const summary = document.getElementById('summary');
+  const numberOfRows = 11;
+  const startRadius = 110;
+  const rowGap = 55;
 
-    const tooltip = d3.select("#tooltip");
+  const votingStates = new Set([
+    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+    "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+    "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+    "VA","WA","WV","WI","WY"
+  ]);
 
-    // Load legislators JSON
-    const dataUrl = 'https://unitedstates.github.io/congress-legislators/legislators-current.json';
+  function partyClass(party) {
+    switch(party) {
+      case 'Democrat': return 'democrat';
+      case 'Republican': return 'republican';
+      default: return 'vacant';
+    }
+  }
 
-    d3.json(dataUrl).then(members => {
-      // Extract active House members (type rep, term ending >= 2025-01-01)
-      const houseMembers = members.flatMap(member => 
-        member.terms.filter(term => term.type === 'rep' && new Date(term.end) >= new Date('2025-01-01'))
-          .map(term => ({
-            party: term.party || 'Other',
-            state: term.state || '',
-            name: member.name.official_full || (member.name.first + ' ' + member.name.last),
-          }))
-      );
+  fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
+    .then(response => response.json())
+    .then(data => {
+      const currentDate = new Date();
 
-      // Split by party
-      const democrats = houseMembers.filter(m => m.party === 'Democrat');
-      const republicans = houseMembers.filter(m => m.party === 'Republican');
-      const others = houseMembers.filter(m => m.party !== 'Democrat' && m.party !== 'Republican');
+      // Filter voting House members only from states (no non-voting delegates)
+      const houseMembers = data.filter(member => {
+        return member.terms.some(term =>
+          term.type === "rep" &&
+          (!term.end || new Date(term.end) > currentDate) &&
+          votingStates.has(term.state)
+        );
+      });
 
-      // Total seats per side
-      const totalDems = democrats.length;
-      const totalReps = republicans.length;
-      const totalOthers = others.length;
-
-      // Seats per row approx
-      const seatsPerRow = Math.ceil(435 / rows);
-
-      // Helper: calculate seat angle offsets for a given number of seats in a semicircle
-      // Returns array of angles from -90° to +90° in radians, spaced for given count
-      function seatAngles(count) {
-        const start = -Math.PI / 2;
-        const end = Math.PI / 2;
-        if (count === 1) return [0];
-        let arr = [];
-        for (let i = 0; i < count; i++) {
-          arr.push(start + i * (end - start) / (count - 1));
+      // Sort by state then district for consistent ordering
+      houseMembers.sort((a,b) => {
+        const aTerm = a.terms.find(t => t.type === "rep");
+        const bTerm = b.terms.find(t => t.type === "rep");
+        if(aTerm.state === bTerm.state) {
+          return (aTerm.district || 0) - (bTerm.district || 0);
+        } else {
+          return aTerm.state.localeCompare(bTerm.state);
         }
-        return arr;
+      });
+
+      // Count members by party
+      let demCount = 0, repCount = 0, vacantCount = 0;
+      houseMembers.forEach(member => {
+        const lastTerm = member.terms[member.terms.length - 1];
+        const party = lastTerm.party;
+        if(party === 'Democrat') demCount++;
+        else if(party === 'Republican') repCount++;
+        else vacantCount++;
+      });
+
+      const totalSeats = houseMembers.length;
+
+      const radii = [];
+      for(let i=0; i<numberOfRows; i++) {
+        radii.push(startRadius + i * rowGap);
       }
 
-      // Arrange Democrats on left semicircle (from -180° to 0° normalized to [-π,-π/2])
-      // Arrange Republicans on right semicircle (0° to 180° normalized to [π/2, π])
-      // We give each side half semicircle for seats
+      const arcLengths = radii.map(r => Math.PI * r);
+      const totalArcLength = arcLengths.reduce((a,b) => a+b, 0);
+      let seatsPerRow = arcLengths.map(arc => Math.round((arc / totalArcLength) * totalSeats));
 
-      // We'll distribute seats in rows going outward from center (radius increases per row)
-      const rowHeight = seatSize + seatPadding;
-      const baseRadius = 80;
-
-      // For each party, arrange seats across rows and angles
-
-      // Function to compute seat positions along an arc section given count, row index, center angle and arc width
-      function computePositions(membersArr, centerAngle, arcWidth, side) {
-        let positions = [];
-        let seatsCount = membersArr.length;
-        let seatIndex = 0;
-
-        // Total seats per row for this side (ideal)
-        // Distribute seats evenly among rows, last row may have fewer if not divisible
-        const baseRowSeats = Math.floor(seatsCount / rows);
-        const remainderSeats = seatsCount % rows;
-
-        for (let r = 0; r < rows; r++) {
-          let seatsThisRow = baseRowSeats + (r < remainderSeats ? 1 : 0);
-          let radius = baseRadius + r * rowHeight;
-
-          // Angles along the arc segment for this row (arcWidth spread)
-          // For left, centerAngle = -PI/2, arcWidth = PI/2 (90 deg); for right, centerAngle = PI/2
-          // We calculate slice angles centered on centerAngle
-          let startAngle = centerAngle - arcWidth/2;
-          let endAngle = centerAngle + arcWidth/2;
-          for (let i = 0; i < seatsThisRow; i++) {
-            if(seatIndex >= seatsCount) break;
-            let angle = startAngle + (seatsThisRow === 1 ? 0 : i * (endAngle - startAngle) / (seatsThisRow -1));
-
-            // Convert polar to cartesian (SVG coords: y inverted as we pivot downward)
-            let x = pivotX + radius * Math.cos(angle);
-            let y = pivotY + radius * Math.sin(angle);
-
-            positions.push({
-              member: membersArr[seatIndex],
-              x, y,
-            });
-            seatIndex++;
-          }
-        }
-        return positions;
-      }
-
-      // Compute positions left (Dems), right (Reps)
-      // Left semicircle: from -180° (-PI) to 0 (0), center at -PI/2, arcWidth PI/2 (90 deg)
-      // Right semicircle: from 0 to 180°, center PI/2, arcWidth PI/2 (90 deg)
-      // We use half semicircle per side so total full semicircle 180°
-
-      let demPositions = computePositions(democrats, -Math.PI/2, Math.PI/2, 'left');
-      let repPositions = computePositions(republicans, Math.PI/2, Math.PI/2, 'right');
-
-      // Other small group in center front arc spanning about 30 degrees centered at 0°
-      let othersPositions = [];
-      if(totalOthers > 0){
-        // Use 2 rows max for others, radius smaller than rows for dem/rep
-        const othersRows = Math.min(2, rows);
-        const othersBaseRadius = baseRadius - 30;
-        const othersRowHeight = rowHeight;
-
-        // Distribute others across rows like computePositions but centered at 0 with smaller arc 30 degrees (~ PI/6)
-        const arcWidthOthers = Math.PI / 6; // 30 degrees
-
-        let seatIndex = 0;
-        const baseRowSeats = Math.floor(totalOthers / othersRows);
-        const remainderSeats = totalOthers % othersRows;
-        for(let r=0; r<othersRows; r++){
-          let seatsThisRow = baseRowSeats + (r < remainderSeats ? 1 : 0);
-          let radius = othersBaseRadius + r * othersRowHeight;
-          let startAngle = -arcWidthOthers/2;
-          let endAngle = arcWidthOthers/2;
-          for(let i=0; i<seatsThisRow; i++){
-            if(seatIndex >= totalOthers) break;
-            let angle = seatsThisRow === 1 ? 0 : startAngle + i * (endAngle - startAngle) / (seatsThisRow -1);
-            let x = pivotX + radius * Math.cos(angle);
-            let y = pivotY + radius * Math.sin(angle);
-            othersPositions.push({
-              member: others[seatIndex],
-              x, y,
-            });
-            seatIndex++;
+      let seatDifference = seatsPerRow.reduce((a,b) => a+b, 0) - totalSeats;
+      while(seatDifference !== 0) {
+        for(let i=0; i<seatsPerRow.length && seatDifference !== 0; i++) {
+          if(seatDifference > 0 && seatsPerRow[i] > 1) {
+            seatsPerRow[i]--;
+            seatDifference--;
+          } else if(seatDifference < 0) {
+            seatsPerRow[i]++;
+            seatDifference++;
           }
         }
       }
 
-      // Combine all seats positions for rendering
-      const allPositions = [...demPositions, ...repPositions, ...othersPositions];
+      const centerX = hemicycle.clientWidth / 2;
+      const centerY = hemicycle.clientHeight;
 
-      // Draw seats
-      svg.selectAll("rect.seat")
-        .data(allPositions)
-        .join("rect")
-        .attr("class", d => "seat " + d.member.party)
-        .attr("width", seatSize)
-        .attr("height", seatSize)
-        .attr("rx", 3)
-        .attr("ry", 3)
-        .attr("x", d => d.x - seatSize/2)
-        .attr("y", d => d.y - seatSize/2)
-        .on("mouseover", (event, d) => {
-          tooltip.style("opacity", 1)
-            .html(`<strong>${d.member.name}</strong><br/>State: ${d.member.state}<br/>Party: ${d.member.party}`)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 40) + "px");
-        })
-        .on("mouseout", () => tooltip.style("opacity", 0));
+      let seatGlobalIndex = 0;
 
-      // Draw seat labels (state abbreviations)
-      svg.selectAll("text.label")
-        .data(allPositions)
-        .join("text")
-        .attr("class", "label")
-        .attr("x", d => d.x)
-        .attr("y", d => d.y + 3)
-        .attr("text-anchor", "middle")
-        .text(d => d.member.state);
+      function showTooltip(seat, member) {
+        tooltip.style.opacity = '1';
+        tooltip.innerText = `${member.name.first} ${member.name.last}\n${member.party || member.terms[member.terms.length-1].party}\n${member.terms[member.terms.length-1].state}-${member.terms[member.terms.length-1].district || 'At Large'}`;
+        const rect = seat.getBoundingClientRect();
+        const bodyRect = document.body.getBoundingClientRect();
+        tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
+        tooltip.style.top = `${rect.top - bodyRect.top - 30}px`;
+      }
 
-    }).catch(error => {
-      console.error("Error loading legislators data:", error);
-      svg.append("text")
-        .attr("x", width/2)
-        .attr("y", height/2)
-        .attr("text-anchor", "middle")
-        .style("fill", "red")
-        .text("Failed to load legislators data");
+      function hideTooltip() {
+        tooltip.style.opacity = '0';
+      }
+
+      for(let row=0; row < numberOfRows; row++) {
+        const radius = radii[row];
+        const seats = seatsPerRow[row];
+        for(let seatIndex=0; seatIndex < seats; seatIndex++) {
+          if(seatGlobalIndex >= totalSeats) break;
+
+          const member = houseMembers[seatGlobalIndex];
+          const lastTerm = member.terms[member.terms.length -1];
+          const party = lastTerm.party;
+          const partyCls = partyClass(party);
+          const angle = Math.PI - seatIndex * Math.PI / (seats - 1);
+          const x = centerX + radius * Math.cos(angle);
+          const y = centerY - radius * Math.sin(angle);
+
+          const seat = document.createElement('div');
+          seat.className = 'seat ' + partyCls;
+          seat.style.left = x + 'px';
+          seat.style.top = y + 'px';
+          seat.title = `${member.name.first} ${member.name.last} (${party})`;
+
+          // Navigate to new page on click with format STATE-DISTRICT.html or STATE.html if district missing
+          seat.addEventListener('click', () => {
+            const state = lastTerm.state;
+            const district = lastTerm.district;
+            const fileName = district && district !== 0 ? `house/${state}-${district}.html` : `${state}.html`;
+            window.location.href = fileName;
+          });
+
+          seat.addEventListener('mouseenter', () => showTooltip(seat, member));
+          seat.addEventListener('mouseleave', hideTooltip);
+
+          hemicycle.appendChild(seat);
+          seatGlobalIndex++;
+        }
+      }
+
+      summary.textContent = `Republicans: ${repCount} — Democrats: ${demCount} — Vacant: ${vacantCount}`;
+      window.addEventListener('scroll', hideTooltip);
+      window.addEventListener('click', hideTooltip);
+    })
+    .catch(err => {
+      console.error("Failed to load legislators data:", err);
+      hemicycle.innerText = "Failed to load data.";
     });
-  </script>
+</script>
 </body>
 </html>
