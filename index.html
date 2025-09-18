@@ -113,7 +113,6 @@
         <input type="text" id="state-select" placeholder="Start typing a state..." autocomplete="off"
                style="width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;" />
         <div id="state-options" style="top: 60px; left: 10px; width: 92%;"></div>
-
         <label for="party-select" style="margin-top:8px; display:block;">Select or type a party:</label>
         <input type="text" id="party-select" placeholder="Start typing a party..." autocomplete="off"
                style="width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;" />
@@ -221,7 +220,6 @@
       }
     });
   })();
-
   // Party dropdown logic
   (function() {
     const parties = ["Democrat", "Republican", "Vacant"];
@@ -282,7 +280,6 @@
       }
     });
   })();
-
   const hemicycle = document.getElementById('hemicycle');
   const tooltip = document.getElementById('tooltip');
   const summary = document.getElementById('summary');
@@ -308,33 +305,37 @@
   }
   let houseMembers = [];
   let seatElements = [];
-  fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
-    .then(response => response.json())
-    .then(data => {
-      const currentDate = new Date();
-      houseMembers = data.filter(member => {
-        return member.terms.some(term =>
-          term.type === "rep" &&
-          (!term.end || new Date(term.end) > currentDate) &&
-          votingStates.has(term.state)
-        );
-      });
-      houseMembers.sort((a,b) => {
-        const aTerm = a.terms.find(t => t.type === "rep");
-        const bTerm = b.terms.find(t => t.type === "rep");
-        if(aTerm.state === bTerm.state) {
-          return (aTerm.district || 0) - (bTerm.district || 0);
-        } else {
-          return aTerm.state.localeCompare(bTerm.state);
-        }
-      });
-      drawHemicycle();
-      updateSummary();
-    })
-    .catch(err => {
-      console.error("Failed to load legislators data:", err);
-      hemicycle.innerText = "Failed to load data.";
-    });
+	fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
+	  .then(response => response.json())
+	  .then(data => {
+		const currentDate = new Date();
+
+		// ONLY change this filtering step to exclude any member whose LAST TERM is NOT HOUSE
+		houseMembers = data.filter(member => {
+		  if (!member.terms || member.terms.length === 0) return false;
+		  const lastTerm = member.terms[member.terms.length - 1];
+		  return lastTerm.type === "rep" &&
+				 (!lastTerm.end || new Date(lastTerm.end) > currentDate) &&
+				 votingStates.has(lastTerm.state);
+		});
+
+		// The rest remains your original code unchanged
+		houseMembers.sort((a,b) => {
+		  const aTerm = a.terms[a.terms.length - 1];
+		  const bTerm = b.terms[b.terms.length - 1];
+		  if(aTerm.state === bTerm.state) {
+			return (aTerm.district || 0) - (bTerm.district || 0);
+		  } else {
+			return aTerm.state.localeCompare(bTerm.state);
+		  }
+		});
+		drawHemicycle();
+		updateSummary();
+	  })
+	  .catch(err => {
+		console.error("Failed to load legislators data:", err);
+		hemicycle.innerText = "Failed to load data.";
+	  });
   function drawHemicycle() {
     hemicycle.innerHTML = '';
     seatElements = [];
@@ -393,8 +394,9 @@
     }
   }
   function showTooltip(seat, member) {
+    const lastTerm = member.terms[member.terms.length -1];
     tooltip.style.opacity = '1';
-    tooltip.innerText = `${member.name.first} ${member.name.last}\n${member.party || member.terms[member.terms.length-1].party}\n${member.terms[member.terms.length-1].state}-${member.terms[member.terms.length-1].district || 'At Large'}`;
+    tooltip.innerText = `${member.name.first} ${member.name.last}\n${lastTerm.party}\n${lastTerm.state}-${lastTerm.district || 'At Large'}`;
     const rect = seat.getBoundingClientRect();
     const bodyRect = document.body.getBoundingClientRect();
     tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
@@ -440,17 +442,14 @@
       stateFilter = stateNameToCode[stateFilterText];
     }
     const nameFilter = searchInput.value.toLowerCase().trim();
-
     seatElements.forEach(({seat, member}) => {
-      const memberParty = (member.terms[member.terms.length -1].party || '').toLowerCase();
+      const lastTerm = member.terms[member.terms.length -1];
+      const memberParty = (lastTerm.party || '').toLowerCase();
       const partyMatch = !partyFilterText || memberParty === partyFilterText;
-
-      const memberState = member.terms[member.terms.length -1].state.toUpperCase();
+      const memberState = lastTerm.state.toUpperCase();
       const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-
       const stateMatch = !stateFilter || memberState === stateFilter;
       const nameMatch = !nameFilter || fullName.includes(nameFilter);
-
       if(stateMatch && nameMatch && partyMatch) {
         seat.style.opacity = '1';
         seat.classList.remove('highlight');
@@ -460,15 +459,13 @@
       }
     });
     if(nameFilter === '' && !stateFilter && !partyFilterText) return;
-
     let found = false;
     seatElements.forEach(({seat, member}) => {
-      const memberParty = (member.terms[member.terms.length -1].party || '').toLowerCase();
+      const lastTerm = member.terms[member.terms.length -1];
+      const memberParty = (lastTerm.party || '').toLowerCase();
       const partyMatch = !partyFilterText || memberParty === partyFilterText;
-
-      const memberState = member.terms[member.terms.length -1].state.toUpperCase();
+      const memberState = lastTerm.state.toUpperCase();
       const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-
       if(fullName === nameFilter && partyMatch && (!stateFilter || memberState === stateFilter)) {
         seat.style.opacity = '1';
         seat.classList.add('highlight');
@@ -477,19 +474,17 @@
     });
     if(!found) {
       seatElements.forEach(({seat, member}) => {
-        const memberParty = (member.terms[member.terms.length -1].party || '').toLowerCase();
+        const lastTerm = member.terms[member.terms.length -1];
+        const memberParty = (lastTerm.party || '').toLowerCase();
         const partyMatch = !partyFilterText || memberParty === partyFilterText;
-
-        const memberState = member.terms[member.terms.length -1].state.toUpperCase();
+        const memberState = lastTerm.state.toUpperCase();
         const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-
         if(fullName.includes(nameFilter) && partyMatch && (!stateFilter || memberState === stateFilter)) {
           seat.classList.add('highlight');
         }
       });
     }
   }
-
   searchInput.addEventListener('input', () => {
     filterSeats();
   });
@@ -499,14 +494,12 @@
   partyInput.addEventListener('input', () => {
     filterSeats();
   });
-
   clearSearchBtn.addEventListener('click', () => {
     searchInput.value = '';
     stateInput.value = '';
     partyInput.value = '';
     filterSeats();
   });
-
   window.addEventListener('scroll', hideTooltip);
   window.addEventListener('click', hideTooltip);
 </script>
