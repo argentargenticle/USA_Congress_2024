@@ -381,7 +381,7 @@
         seat.addEventListener('click', () => {
           const state = lastTerm.state;
           const district = lastTerm.district;
-          const fileName = district && district !== 0 ? `house/${state}-${district}.html` : `${state}.html`;
+          const fileName = district && district !== 0 ? `house.html?${state}-${district}` : `${state}.html`;
           window.location.href = fileName;
         });
         seat.addEventListener('mouseenter', () => showTooltip(seat, member));
