@@ -252,6 +252,7 @@
         <div class="tooltip" id="tooltip"></div>
         <br />
         <div class="summary" id="summary"></div>
+        <div class="simpleMar" id="simpleMar"></div>
     </div>
 </div>
 <div>
@@ -269,384 +270,392 @@
         <li>Blue dots = Democrats</li>
         <li>Republicans are on left and Democrats on right to reflect where they sit in real life.</li>
     </ul>
-<script>
-    (function(){
-        const states = [
-            "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
-            "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
-            "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
-            "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
-            "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
-            "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
-            "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
-        ];
-        const abbreviations = {
-            AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
-            CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
-            HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
-            KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
-            MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
-            MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
-            NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
-            OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
-            SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
-            VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming"
-        };
-        const stateInput = document.getElementById('state-select');
-        const stateOptionsContainer = document.getElementById('state-options');
-        function getAllStateOptions() {
-            const combined = [];
-            for (const [abbr, full] of Object.entries(abbreviations)) {
-                combined.push(`${abbr} - ${full}`);
+    <script>
+        (function(){
+            const states = [ "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
+                "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
+                "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+                "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
+                "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
+                "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont",
+                "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming" ];
+            const abbreviations = { AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+                CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+                HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+                KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+                MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
+                MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire", NJ: "New Jersey",
+                NM: "New Mexico", NY: "New York", NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+                OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+                SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+                VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming" };
+            const stateInput = document.getElementById('state-select');
+            const stateOptionsContainer = document.getElementById('state-options');
+            function getAllStateOptions() {
+                const combined = [];
+                for (const [abbr, full] of Object.entries(abbreviations)) {
+                    combined.push(`${abbr} - ${full}`);
+                }
+                return combined;
             }
-            return combined;
-        }
-        function showStateOptions(filtered) {
-            stateOptionsContainer.innerHTML = '';
-            filtered.forEach(item => {
-                const div = document.createElement('div');
-                div.textContent = item;
-                div.style.padding = '6px 8px';
-                div.style.cursor = 'pointer';
-                div.addEventListener('mousedown', () => {
-                    const abbr = item.split(' - ')[0];
-                    if (abbreviations[abbr]) {
-                        stateInput.value = abbreviations[abbr];
+            function showStateOptions(filtered) {
+                stateOptionsContainer.innerHTML = '';
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.textContent = item;
+                    div.style.padding = '6px 8px';
+                    div.style.cursor = 'pointer';
+                    div.addEventListener('mousedown', () => {
+                        const abbr = item.split(' - ')[0];
+                        if (abbreviations[abbr]) {
+                            stateInput.value = abbreviations[abbr];
+                            stateOptionsContainer.style.display = 'none';
+                            filterSeats();
+                            toggleClearButtons();
+                        }
+                    });
+                    div.addEventListener('mouseover', () => {
+                        div.style.background = '#0074D9';
+                        div.style.color = 'white';
+                    });
+                    div.addEventListener('mouseout', () => {
+                        div.style.background = 'white';
+                        div.style.color = 'black';
+                    });
+                    stateOptionsContainer.appendChild(div);
+                });
+                stateOptionsContainer.style.display = filtered.length ? 'block' : 'none';
+            }
+            stateInput.addEventListener('input', () => {
+                const val = stateInput.value.trim().toLowerCase();
+                if (!val) {
+                    showStateOptions(getAllStateOptions());
+                    filterSeats();
+                    toggleClearButtons();
+                    return;
+                }
+                const filtered = getAllStateOptions().filter(item => {
+                    const [abbr, full] = item.split(' - ');
+                    return abbr.toLowerCase().startsWith(val) || full.toLowerCase().startsWith(val);
+                });
+                showStateOptions(filtered);
+                filterSeats();
+                toggleClearButtons();
+            });
+            stateInput.addEventListener('focus', () => {
+                showStateOptions(getAllStateOptions());
+            });
+            stateInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const val = stateInput.value.trim().toUpperCase();
+                    if (abbreviations[val]) {
+                        stateInput.value = abbreviations[val];
                         stateOptionsContainer.style.display = 'none';
                         filterSeats();
                         toggleClearButtons();
+                        e.preventDefault();
                     }
-                });
-                div.addEventListener('mouseover', () => {
-                    div.style.background = '#0074D9';
-                    div.style.color = 'white';
-                });
-                div.addEventListener('mouseout', () => {
-                    div.style.background = 'white';
-                    div.style.color = 'black';
-                });
-                stateOptionsContainer.appendChild(div);
+                }
             });
-            stateOptionsContainer.style.display = filtered.length ? 'block' : 'none';
-        }
-        stateInput.addEventListener('input', () => {
-            const val = stateInput.value.trim().toLowerCase();
-            if (!val) {
-                showStateOptions(getAllStateOptions());
-                filterSeats();
-                toggleClearButtons();
-                return;
-            }
-            const filtered = getAllStateOptions().filter(item => {
-                const [abbr, full] = item.split(' - ');
-                return abbr.toLowerCase().startsWith(val) || full.toLowerCase().startsWith(val);
-            });
-            showStateOptions(filtered);
-            filterSeats();
-            toggleClearButtons();
-        });
-        stateInput.addEventListener('focus', () => {
-            showStateOptions(getAllStateOptions());
-        });
-        stateInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const val = stateInput.value.trim().toUpperCase();
-                if (abbreviations[val]) {
-                    stateInput.value = abbreviations[val];
+            document.addEventListener('click', (e) => {
+                if (!stateInput.contains(e.target) && !stateOptionsContainer.contains(e.target)) {
                     stateOptionsContainer.style.display = 'none';
-                    filterSeats();
-                    toggleClearButtons();
-                    e.preventDefault();
-                }
-            }
-        });
-        document.addEventListener('click', (e) => {
-            if (!stateInput.contains(e.target) && !stateOptionsContainer.contains(e.target)) {
-                stateOptionsContainer.style.display = 'none';
-            }
-        });
-    })();
-
-    const hemicycle = document.getElementById('hemicycle');
-    const tooltip = document.getElementById('tooltip');
-    const summary = document.getElementById('summary');
-    const searchInput = document.getElementById('search-input');
-    const clearSearchBtn = document.getElementById('clear-search');
-    const stateInput = document.getElementById('state-select');
-    const clearSearchX = document.getElementById('clear-search-input');
-    const clearStateX = document.getElementById('clear-state-input');
-
-    const numberOfRows = 11;
-    const fullStartRadius = 250;
-    const fullRowGap = 25;
-    const votingStates = new Set([
-        "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
-        "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-        "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
-        "VA","WA","WV","WI","WY"
-    ]);
-
-    function partyClass(party) {
-        switch(party) {
-            case 'Democrat': return 'democrat';
-            case 'Republican': return 'republican';
-            default: return 'vacant';
-        }
-    }
-
-    let houseMembers = [];
-    let seatElements = [];
-
-    fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
-        .then(response => response.json())
-        .then(data => {
-            const currentDate = new Date();
-            houseMembers = data.filter(member => {
-                if (!member.terms || member.terms.length === 0) return false;
-                const lastTerm = member.terms[member.terms.length - 1];
-                return lastTerm.type === "rep" &&
-                    (!lastTerm.end || new Date(lastTerm.end) > currentDate) &&
-                    votingStates.has(lastTerm.state);
-            });
-            houseMembers.sort((a,b) => {
-                const aTerm = a.terms[a.terms.length - 1];
-                const bTerm = b.terms[b.terms.length - 1];
-                if(aTerm.state === bTerm.state) {
-                    return (aTerm.district || 0) - (bTerm.district || 0);
-                } else {
-                    return aTerm.state.localeCompare(bTerm.state);
                 }
             });
-            drawHemicycle();
-            updateSummary();
-            toggleClearButtons();
-        })
-        .catch(err => {
-            console.error("Failed to load legislators data:", err);
-            hemicycle.innerText = "Failed to load data.";
-        });
+        })();
 
-    function drawHemicycle() {
-        hemicycle.innerHTML = '';
-        seatElements = [];
+        const hemicycle = document.getElementById('hemicycle');
+        const tooltip = document.getElementById('tooltip');
+        const summary = document.getElementById('summary');
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search');
+        const stateInput = document.getElementById('state-select');
+        const clearSearchX = document.getElementById('clear-search-input');
+        const clearStateX = document.getElementById('clear-state-input');
 
-        const containerWidth = hemicycle.clientWidth;
-        const containerHeight = hemicycle.clientHeight;
+        const numberOfRows = 11;
+        const fullStartRadius = 250;
+        const fullRowGap = 25;
+        const votingStates = new Set([
+            "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+            "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+            "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+            "VA","WA","WV","WI","WY"
+        ]);
 
-        const scale = (containerWidth - 50) / 700;
-
-        const startRadius = fullStartRadius * scale;
-        const rowGap = fullRowGap * scale;
-
-        const radii = [];
-        for(let i=0; i<numberOfRows; i++) {
-            radii.push(startRadius + i * rowGap);
-        }
-
-        const centerX = containerWidth / 2;
-        const centerY = containerHeight;
-
-        // Scale arc gap accordingly
-        const baseGap = 0.03 * scale;
-        const totalArc = Math.PI;
-
-        let repStart = totalArc;
-        let repEnd = totalArc * 0.53 + baseGap;
-        let vacStart = repEnd + baseGap;
-        let vacEnd = totalArc * 0.47 - baseGap;
-        let demStart = vacEnd + baseGap;
-        let demEnd = 0;
-
-        if(scale < 0.55){
-            repEnd = totalArc * 0.58 + baseGap * 0.6;
-            vacStart = repEnd + baseGap * 0.6;
-            vacEnd = totalArc * 0.42 - baseGap * 0.6;
-            demStart = vacEnd + baseGap * 0.6;
-        }
-
-        const republicans = houseMembers.filter(m => m.terms[m.terms.length -1].party === 'Republican');
-        const democrats = houseMembers.filter(m => m.terms[m.terms.length -1].party === 'Democrat');
-        const vacants = houseMembers.filter(m => {
-            const p = m.terms[m.terms.length -1].party;
-            return p !== 'Democrat' && p !== 'Republican';
-        });
-
-        function distributeSeats(totalCount) {
-            const seatsPerRow = Array(numberOfRows).fill(Math.floor(totalCount/numberOfRows));
-            let rem = totalCount - seatsPerRow.reduce((a,b)=>a+b,0);
-            for(let i=0; rem > 0; i=(i+1)%numberOfRows){
-                seatsPerRow[i]++;
-                rem--;
+        function partyClass(party) {
+            switch(party) {
+                case 'Democrat': return 'democrat';
+                case 'Republican': return 'republican';
+                default: return 'vacant';
             }
-            return seatsPerRow;
         }
 
-        const repSeatsPerRow = distributeSeats(republicans.length);
-        const demSeatsPerRow = distributeSeats(democrats.length);
-        const vacSeatsPerRow = distributeSeats(vacants.length);
+        let houseMembers = [];
+        let seatElements = [];
 
-        function drawPartySeats(members, seatsPerRow, startAngle, endAngle) {
-            let memberIndex = 0;
-            for(let row=0; row < numberOfRows; row++){
-                const radius = radii[row];
-                const seatCount = seatsPerRow[row];
-                if(seatCount === 0) continue;
-                const angleRange = Math.abs(startAngle - endAngle);
-                const step = seatCount > 1 ? angleRange/(seatCount - 1) : 0;
-                for(let seatPos=0; seatPos < seatCount; seatPos++){
-                    if(memberIndex >= members.length) break;
-                    const member = members[memberIndex];
+        fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
+            .then(response => response.json())
+            .then(data => {
+                const currentDate = new Date();
+                houseMembers = data.filter(member => {
+                    if (!member.terms || member.terms.length === 0) return false;
                     const lastTerm = member.terms[member.terms.length - 1];
-                    const party = lastTerm.party;
-                    const partyCls = partyClass(party);
-                    let angle;
-                    if(startAngle > endAngle){
-                        angle = startAngle - step * seatPos;
+                    return lastTerm.type === "rep" &&
+                        (!lastTerm.end || new Date(lastTerm.end) > currentDate) &&
+                        votingStates.has(lastTerm.state);
+                });
+                houseMembers.sort((a,b) => {
+                    const aTerm = a.terms[a.terms.length - 1];
+                    const bTerm = b.terms[b.terms.length - 1];
+                    if(aTerm.state === bTerm.state) {
+                        return (aTerm.district || 0) - (bTerm.district || 0);
                     } else {
-                        angle = startAngle + step * seatPos;
+                        return aTerm.state.localeCompare(bTerm.state);
                     }
-                    const x = centerX + radius * Math.cos(angle);
-                    const y = centerY - radius * Math.sin(angle);
-                    const seat = document.createElement('div');
-                    seat.className = 'seat ' + partyCls;
-                    seat.style.left = x + 'px';
-                    seat.style.top = y + 'px';
-                    seat.title = `${member.name.first} ${member.name.last} (${party})`;
-                    seat.style.width = Math.max(scale * 15, 7) + 'px';
-                    seat.style.height = Math.max(scale * 15, 7) + 'px';
-                    seat.addEventListener('click', () => {
-                        const state = lastTerm.state;
-                        const district = lastTerm.district;
-                        const fileName = district && district !== 0 ? `house.html?${state}-${district}` : `house.html?${state}`;
-                        window.location.href = fileName;
-                    });
-                    seat.addEventListener('mouseenter', () => showTooltip(seat, member));
-                    seat.addEventListener('mouseleave', hideTooltip);
-                    hemicycle.appendChild(seat);
-                    seatElements.push({seat, member});
-                    memberIndex++;
+                });
+                drawHemicycle();
+                updateSummary();
+                toggleClearButtons();
+            })
+            .catch(err => {
+                console.error("Failed to load legislators data:", err);
+                hemicycle.innerText = "Failed to load data.";
+            });
+
+        function drawHemicycle() {
+            hemicycle.innerHTML = '';
+            seatElements = [];
+
+            const containerWidth = hemicycle.clientWidth;
+            const containerHeight = hemicycle.clientHeight;
+
+            const scale = (containerWidth - 50) / 700;
+
+            const startRadius = fullStartRadius * scale;
+            const rowGap = fullRowGap * scale;
+
+            const radii = [];
+            for(let i=0; i<numberOfRows; i++) {
+                radii.push(startRadius + i * rowGap);
+            }
+
+            const centerX = containerWidth / 2;
+            const centerY = containerHeight;
+
+            // Scale arc gap accordingly
+            const baseGap = 0.03 * scale;
+            const totalArc = Math.PI;
+
+            let repStart = totalArc;
+            let repEnd = totalArc * 0.53 + baseGap;
+            let vacStart = repEnd + baseGap;
+            let vacEnd = totalArc * 0.47 - baseGap;
+            let demStart = vacEnd + baseGap;
+            let demEnd = 0;
+
+            if(scale < 0.55){
+                repEnd = totalArc * 0.58 + baseGap * 0.6;
+                vacStart = repEnd + baseGap * 0.6;
+                vacEnd = totalArc * 0.42 - baseGap * 0.6;
+                demStart = vacEnd + baseGap * 0.6;
+            }
+
+            const republicans = houseMembers.filter(m => m.terms[m.terms.length -1].party === 'Republican');
+            const democrats = houseMembers.filter(m => m.terms[m.terms.length -1].party === 'Democrat');
+            const vacants = houseMembers.filter(m => {
+                const p = m.terms[m.terms.length -1].party;
+                return p !== 'Democrat' && p !== 'Republican';
+            });
+
+            function distributeSeats(totalCount) {
+                const seatsPerRow = Array(numberOfRows).fill(Math.floor(totalCount/numberOfRows));
+                let rem = totalCount - seatsPerRow.reduce((a,b)=>a+b,0);
+                for(let i=0; rem > 0; i=(i+1)%numberOfRows){
+                    seatsPerRow[i]++;
+                    rem--;
+                }
+                return seatsPerRow;
+            }
+
+            const repSeatsPerRow = distributeSeats(republicans.length);
+            const demSeatsPerRow = distributeSeats(democrats.length);
+            const vacSeatsPerRow = distributeSeats(vacants.length);
+
+            function drawPartySeats(members, seatsPerRow, startAngle, endAngle) {
+                let memberIndex = 0;
+                for(let row=0; row < numberOfRows; row++){
+                    const radius = radii[row];
+                    const seatCount = seatsPerRow[row];
+                    if(seatCount === 0) continue;
+                    const angleRange = Math.abs(startAngle - endAngle);
+                    const step = seatCount > 1 ? angleRange/(seatCount - 1) : 0;
+                    for(let seatPos=0; seatPos < seatCount; seatPos++){
+                        if(memberIndex >= members.length) break;
+                        const member = members[memberIndex];
+                        const lastTerm = member.terms[member.terms.length - 1];
+                        const party = lastTerm.party;
+                        const partyCls = partyClass(party);
+                        let angle;
+                        if(startAngle > endAngle){
+                            angle = startAngle - step * seatPos;
+                        } else {
+                            angle = startAngle + step * seatPos;
+                        }
+                        const x = centerX + radius * Math.cos(angle);
+                        const y = centerY - radius * Math.sin(angle);
+                        const seat = document.createElement('div');
+                        seat.className = 'seat ' + partyCls;
+                        seat.style.left = x + 'px';
+                        seat.style.top = y + 'px';
+                        seat.title = `${member.name.first} ${member.name.last} (${party})`;
+                        seat.style.width = Math.max(scale * 15, 7) + 'px';
+                        seat.style.height = Math.max(scale * 15, 7) + 'px';
+                        seat.addEventListener('click', () => {
+                            const state = lastTerm.state;
+                            const district = lastTerm.district;
+                            const fileName = district && district !== 0 ? `house.html?${state}-${district}` : `house.html?${state}`;
+                            window.location.href = fileName;
+                        });
+                        seat.addEventListener('mouseenter', () => showTooltip(seat, member));
+                        seat.addEventListener('mouseleave', hideTooltip);
+                        hemicycle.appendChild(seat);
+                        seatElements.push({seat, member});
+                        memberIndex++;
+                    }
                 }
             }
+
+            drawPartySeats(republicans, repSeatsPerRow, repStart, repEnd);
+            drawPartySeats(vacants, vacSeatsPerRow, vacStart, vacEnd);
+            drawPartySeats(democrats, demSeatsPerRow, demStart, demEnd);
         }
 
-        drawPartySeats(republicans, repSeatsPerRow, repStart, repEnd);
-        drawPartySeats(vacants, vacSeatsPerRow, vacStart, vacEnd);
-        drawPartySeats(democrats, demSeatsPerRow, demStart, demEnd);
-    }
-
-    function showTooltip(seat, member) {
-        const lastTerm = member.terms[member.terms.length -1];
-        tooltip.style.opacity = '1';
-        tooltip.innerText = `${member.name.first} ${member.name.last}\n${lastTerm.party}\n${lastTerm.state}-${lastTerm.district || 'At Large'}`;
-        const rect = seat.getBoundingClientRect();
-        const bodyRect = document.body.getBoundingClientRect();
-        tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
-        tooltip.style.top = `${rect.top - bodyRect.top - 30}px`;
-    }
-    function hideTooltip() {
-        tooltip.style.opacity = '0';
-    }
-    function updateSummary() {
-        let demCount=0, repCount=0, vacantCount=0;
-        houseMembers.forEach(member => {
-            const party = member.terms[member.terms.length - 1].party;
-            if(party === 'Democrat') demCount++;
-            else if(party === 'Republican') repCount++;
-            else vacantCount++;
-        });
-        summary.textContent = `Republicans: ${repCount} — Democrats: ${demCount} — Vacant: ${vacantCount}`;
-    }
-    function filterSeats() {
-        const stateFilterText = stateInput.value.trim().toUpperCase();
-        const stateNameToCode = {
-            "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR",
-            "CALIFORNIA": "CA", "COLORADO": "CO", "CONNECTICUT": "CT", "DELAWARE": "DE",
-            "FLORIDA": "FL", "GEORGIA": "GA", "HAWAII": "HI", "IDAHO": "ID",
-            "ILLINOIS": "IL", "INDIANA": "IN", "IOWA": "IA", "KANSAS": "KS",
-            "KENTUCKY": "KY", "LOUISIANA": "LA", "MAINE": "ME", "MARYLAND": "MD",
-            "MASSACHUSETTS": "MA", "MICHIGAN": "MI", "MINNESOTA": "MN", "MISSISSIPPI": "MS",
-            "MISSOURI": "MO", "MONTANA": "MT", "NEBRASKA": "NE", "NEVADA": "NV",
-            "NEW HAMPSHIRE": "NH", "NEW JERSEY": "NJ", "NEW MEXICO": "NM", "NEW YORK": "NY",
-            "NORTH CAROLINA": "NC", "NORTH DAKOTA": "ND", "OHIO": "OH", "OKLAHOMA": "OK",
-            "OREGON": "OR", "PENNSYLVANIA": "PA", "RHODE ISLAND": "RI", "SOUTH CAROLINA": "SC",
-            "SOUTH DAKOTA": "SD", "TENNESSEE": "TN", "TEXAS": "TX", "UTAH": "UT",
-            "VERMONT": "VT", "VIRGINIA": "VA", "WASHINGTON": "WA", "WEST VIRGINIA": "WV",
-            "WISCONSIN": "WI", "WYOMING": "WY"
-        };
-        let stateFilter = "";
-        if(stateFilterText.length === 2 && votingStates.has(stateFilterText)) {
-            stateFilter = stateFilterText;
-        } else if(stateNameToCode[stateFilterText]) {
-            stateFilter = stateNameToCode[stateFilterText];
-        }
-        const nameFilter = searchInput.value.toLowerCase().trim();
-        seatElements.forEach(({seat, member}) => {
+        function showTooltip(seat, member) {
             const lastTerm = member.terms[member.terms.length -1];
-            const memberState = lastTerm.state.toUpperCase();
-            const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-            const stateMatch = !stateFilter || memberState === stateFilter;
-            const nameMatch = !nameFilter || fullName.includes(nameFilter);
-            if(stateMatch && nameMatch) {
-                seat.style.opacity = '1';
-                seat.classList.remove('highlight');
-            } else {
-                seat.style.opacity = '0.15';
-                seat.classList.remove('highlight');
+            tooltip.style.opacity = '1';
+            tooltip.innerText = `${member.name.first} ${member.name.last}\n${lastTerm.party}\n${lastTerm.state}-${lastTerm.district || 'At Large'}`;
+            const rect = seat.getBoundingClientRect();
+            const bodyRect = document.body.getBoundingClientRect();
+            tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
+            tooltip.style.top = `${rect.top - bodyRect.top - 30}px`;
+        }
+        function hideTooltip() {
+            tooltip.style.opacity = '0';
+        }
+
+        function updateSummary() {
+            let demCount = 0, repCount = 0;
+            houseMembers.forEach(member => {
+                const party = member.terms[member.terms.length - 1].party;
+                if (party === 'Democrat') demCount++;
+                else if (party === 'Republican') repCount++;
+            });
+
+            const totalFilled = demCount + repCount;
+            const vacantCount = 435 - totalFilled;
+
+            let summaryText = `Republicans: ${repCount} — Democrats: ${demCount} — Vacant: ${vacantCount}`;
+            if (vacantCount > 0) {
+                summaryText += ` — <a href="https://ballotpedia.org/Special_elections_to_the_119th_United_States_Congress_(2025-2026)" target="_blank">See upcoming special elections</a>`;
             }
-        });
-        if(nameFilter === '' && !stateFilter) return;
-        let found = false;
-        seatElements.forEach(({seat, member}) => {
-            const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-            const memberState = member.terms[member.terms.length-1].state.toUpperCase();
-            if(fullName === nameFilter && (!stateFilter || memberState === stateFilter)) {
-                seat.style.opacity = '1';
-                seat.classList.add('highlight');
-                found = true;
+            summary.innerHTML = summaryText;
+
+            // SIMPLE MAJORITY (based only on filled seats)
+            const simpleMajority = Math.floor(totalFilled / 2) + 1;
+            document.getElementById("simpleMar").innerText =
+                `Simple Majority (of ${totalFilled} filled seats): ${simpleMajority}`;
+        }
+
+        function filterSeats() {
+            const stateFilterText = stateInput.value.trim().toUpperCase();
+            const stateNameToCode = { "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR",
+                "CALIFORNIA": "CA", "COLORADO": "CO", "CONNECTICUT": "CT", "DELAWARE": "DE",
+                "FLORIDA": "FL", "GEORGIA": "GA", "HAWAII": "HI", "IDAHO": "ID",
+                "ILLINOIS": "IL", "INDIANA": "IN", "IOWA": "IA", "KANSAS": "KS",
+                "KENTUCKY": "KY", "LOUISIANA": "LA", "MAINE": "ME", "MARYLAND": "MD",
+                "MASSACHUSETTS": "MA", "MICHIGAN": "MI", "MINNESOTA": "MN", "MISSISSIPPI": "MS",
+                "MISSOURI": "MO", "MONTANA": "MT", "NEBRASKA": "NE", "NEVADA": "NV",
+                "NEW HAMPSHIRE": "NH", "NEW JERSEY": "NJ", "NEW MEXICO": "NM", "NEW YORK": "NY",
+                "NORTH CAROLINA": "NC", "NORTH DAKOTA": "ND", "OHIO": "OH", "OKLAHOMA": "OK",
+                "OREGON": "OR", "PENNSYLVANIA": "PA", "RHODE ISLAND": "RI", "SOUTH CAROLINA": "SC",
+                "SOUTH DAKOTA": "SD", "TENNESSEE": "TN", "TEXAS": "TX", "UTAH": "UT",
+                "VERMONT": "VT", "VIRGINIA": "VA", "WASHINGTON": "WA", "WEST VIRGINIA": "WV",
+                "WISCONSIN": "WI", "WYOMING": "WY" };
+            let stateFilter = "";
+            if(stateFilterText.length === 2 && votingStates.has(stateFilterText)) {
+                stateFilter = stateFilterText;
+            } else if(stateNameToCode[stateFilterText]) {
+                stateFilter = stateNameToCode[stateFilterText];
             }
-        });
-        if(!found) {
+            const nameFilter = searchInput.value.toLowerCase().trim();
+            seatElements.forEach(({seat, member}) => {
+                const lastTerm = member.terms[member.terms.length -1];
+                const memberState = lastTerm.state.toUpperCase();
+                const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
+                const stateMatch = !stateFilter || memberState === stateFilter;
+                const nameMatch = !nameFilter || fullName.includes(nameFilter);
+                if(stateMatch && nameMatch) {
+                    seat.style.opacity = '1';
+                    seat.classList.remove('highlight');
+                } else {
+                    seat.style.opacity = '0.15';
+                    seat.classList.remove('highlight');
+                }
+            });
+            if(nameFilter === '' && !stateFilter) return;
+            let found = false;
             seatElements.forEach(({seat, member}) => {
                 const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
                 const memberState = member.terms[member.terms.length-1].state.toUpperCase();
-                if(fullName.includes(nameFilter) && (!stateFilter || memberState === stateFilter)) {
+                if(fullName === nameFilter && (!stateFilter || memberState === stateFilter)) {
+                    seat.style.opacity = '1';
                     seat.classList.add('highlight');
+                    found = true;
                 }
             });
+            if(!found) {
+                seatElements.forEach(({seat, member}) => {
+                    const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
+                    const memberState = member.terms[member.terms.length-1].state.toUpperCase();
+                    if(fullName.includes(nameFilter) && (!stateFilter || memberState === stateFilter)) {
+                        seat.classList.add('highlight');
+                    }
+                });
+            }
         }
-    }
-    function toggleClearButtons() {
-        clearSearchX.style.display = searchInput.value ? 'block' : 'none';
-        clearStateX.style.display = stateInput.value ? 'block' : 'none';
-    }
-    clearSearchX.addEventListener('click', () => {
-        searchInput.value = '';
-        filterSeats();
-        toggleClearButtons();
-        searchInput.focus();
-    });
-    clearStateX.addEventListener('click', () => {
-        stateInput.value = '';
-        filterSeats();
-        toggleClearButtons();
-        stateInput.focus();
-    });
-    searchInput.addEventListener('input', () => {
-        filterSeats();
-        toggleClearButtons();
-    });
-    stateInput.addEventListener('input', () => {
-        filterSeats();
-        toggleClearButtons();
-    });
-    clearSearchBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        stateInput.value = '';
-        filterSeats();
-        toggleClearButtons();
-    });
-    window.addEventListener('scroll', () => { tooltip.style.opacity = '0'; });
-    window.addEventListener('click', () => { tooltip.style.opacity = '0'; });
-</script>
+        function toggleClearButtons() {
+            clearSearchX.style.display = searchInput.value ? 'block' : 'none';
+            clearStateX.style.display = stateInput.value ? 'block' : 'none';
+        }
+        clearSearchX.addEventListener('click', () => {
+            searchInput.value = '';
+            filterSeats();
+            toggleClearButtons();
+            searchInput.focus();
+        });
+        clearStateX.addEventListener('click', () => {
+            stateInput.value = '';
+            filterSeats();
+            toggleClearButtons();
+            stateInput.focus();
+        });
+        searchInput.addEventListener('input', () => {
+            filterSeats();
+            toggleClearButtons();
+        });
+        stateInput.addEventListener('input', () => {
+            filterSeats();
+            toggleClearButtons();
+        });
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            stateInput.value = '';
+            filterSeats();
+            toggleClearButtons();
+        });
+        window.addEventListener('scroll', () => { tooltip.style.opacity = '0'; });
+        window.addEventListener('click', () => { tooltip.style.opacity = '0'; });
+    </script>
 </body>
 </html>
