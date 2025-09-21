@@ -263,14 +263,32 @@
         <div class="simpleMar" id="simpleMar"></div>
     </div>
 </div>
+<!-- Add this div below your chart div -->
+<div id="viewer-card" style="
+  border: 1px solid #ccc;
+  background: white;
+  padding: 12px;
+  margin-top: 20px;
+  max-width: 700px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.15);
+  font-family: Arial, sans-serif;
+  display: none;
+">
+    <h3 id="viewer-name" style="margin: 0 0 6px 0;"></h3>
+    <p id="viewer-party" style="margin: 4px 0;"></p>
+    <p id="viewer-state" style="margin: 4px 0;"></p>
+    <button id="viewer-link" style="background-color: #000000;color: white;border: none;padding: 8px 16px;border-radius: 4px;cursor: pointer;font-size: 14px;width:100%;">View Full Details</button>
+</div>
+
 <div>
     <h2>How to use?</h2>
     <ul>
         <li>Enter the name of the person who represents your area in Congress.</li>
         <li>Or pick or type the name of your state on the left side (if you're on a computer) or at the top of the chart (if you're on a phone). You can also just type the state's abbreviation.</li>
+        <li>Or pick or type the name of your district on the left side (if you're on a computer) or at the top of the chart (if you're on a phone).</li>
         <li>Doing one of these things will make all the other names fade out and highlight only your chosen representative(s.</li>
-        <li>If you're on a computer, hover your mouse over the seat or dot to see more info.</li>
-        <li>Click or tap on the seat or dot to get full details about that representative.</li>
+        <li>Click or tap on the seat or dot to get viewer card which appear stats of chart</li>
+        <li>Click or tap "View Full Details" in the viewer card</li>
     </ul>
     <h2>Explain looks</h2>
     <ul>
@@ -582,14 +600,15 @@
                         seat.title = `${member.name.first} ${member.name.last} (${party})`;
                         seat.style.width = Math.max(scale * 15, 7) + 'px';
                         seat.style.height = Math.max(scale * 15, 7) + 'px';
-                        seat.addEventListener('click', () => {
-                            const state = lastTerm.state;
-                            const district = lastTerm.district;
-                            const fileName = district && district !== 0 ? `house.html?${state}-${district}` : `house.html?${state}`;
-                            window.location.href = fileName;
+                        // Replace seat click event listener inside drawPartySeats function:
+                        seat.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            updateViewerCard(member);
+
+                            // Optionally highlight selected seat
+                            seatElements.forEach(({seat: s}) => s.classList.remove('highlight'));
+                            seat.classList.add('highlight');
                         });
-                        seat.addEventListener('mouseenter', () => showTooltip(seat, member));
-                        seat.addEventListener('mouseleave', hideTooltip);
                         hemicycle.appendChild(seat);
                         seatElements.push({seat, member});
                         memberIndex++;
@@ -602,18 +621,58 @@
             drawPartySeats(democrats, demSeatsPerRow, demStart, demEnd);
         }
 
-        function showTooltip(seat, member) {
-            const lastTerm = member.terms[member.terms.length -1];
-            tooltip.style.opacity = '1';
-            tooltip.innerText = `${member.name.first} ${member.name.last}\n${lastTerm.party}\n${lastTerm.state}-${lastTerm.district || 'At Large'}`;
-            const rect = seat.getBoundingClientRect();
-            const bodyRect = document.body.getBoundingClientRect();
-            tooltip.style.left = `${rect.left + rect.width/2 - bodyRect.left}px`;
-            tooltip.style.top = `${rect.top - bodyRect.top - 30}px`;
+        const viewerCard = document.getElementById('viewer-card');
+        const viewerName = document.getElementById('viewer-name');
+        const viewerParty = document.getElementById('viewer-party');
+        const viewerState = document.getElementById('viewer-state');
+        const viewerLink = document.getElementById('viewer-link');
+
+        // Mapping of state abbreviations to full names
+        const stateFullNames = {
+            AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California", CO: "Colorado",
+            CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia", HI: "Hawaii", ID: "Idaho",
+            IL: "Illinois", IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky", LA: "Louisiana",
+            ME: "Maine", MD: "Maryland", MA: "Massachusetts", MI: "Michigan", MN: "Minnesota",
+            MS: "Mississippi", MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
+            NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York", NC: "North Carolina",
+            ND: "North Dakota", OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+            RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota", TN: "Tennessee", TX: "Texas",
+            UT: "Utah", VT: "Vermont", VA: "Virginia", WA: "Washington", WV: "West Virginia",
+            WI: "Wisconsin", WY: "Wyoming", DC: "District of Columbia"
+        };
+
+        function updateViewerCard(member) {
+            const lastTerm = member.terms[member.terms.length - 1];
+            const fullStateName = stateFullNames[lastTerm.state] || lastTerm.state; // fallback to abbreviation if unknown
+
+            viewerName.textContent = `${member.name.first} ${member.name.last}`;
+            viewerParty.textContent = `Party: ${lastTerm.party}`;
+            viewerState.textContent = `State: ${fullStateName} District: ${lastTerm.district || 'At Large'}`;
+            const fileName = lastTerm.district && lastTerm.district !== 0 ? `house.html?${lastTerm.state}-${lastTerm.district}` : `house.html?${lastTerm.state}`;
+            viewerLink.onclick = () => {
+                window.location.href = fileName;
+            };
+
+            // Change card background color based on party
+            if(lastTerm.party.toLowerCase() === 'democrat'){
+                viewerCard.style.backgroundColor = '#004c8f'; // Blue
+                viewerCard.style.color = 'white';
+            } else if(lastTerm.party.toLowerCase() === 'republican'){
+                viewerCard.style.backgroundColor = '#e43030'; // Red
+                viewerCard.style.color = 'white';
+            } else {
+                viewerCard.style.backgroundColor = 'white'; // Neutral
+                viewerCard.style.color = 'black';
+            }
+
+            viewerCard.style.display = 'block';
         }
-        function hideTooltip() {
-            tooltip.style.opacity = '0';
-        }
+
+        // Hide viewer card on clicking outside seats/viewer card
+        document.addEventListener('click', () => {
+            viewerCard.style.display = 'none';
+            seatElements.forEach(({seat: s}) => s.classList.remove('highlight'));
+        });
 
         function updateSummary() {
             let demCount = 0, repCount = 0;
