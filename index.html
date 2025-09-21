@@ -16,7 +16,7 @@
             width: 300px;
         }
         #search-input,
-        #state-select, #district-select {
+        #state-select, #district-select, #party-select {
             font-size: 14px;
             margin: 0px;
             padding: 6px 28px 6px 8px;
@@ -82,7 +82,7 @@
         #header {
             margin: 10px 0px 0px 0px;
         }
-        #state-options, #district-options {
+        #state-options, #district-options, #party-options {
             width: 99%;
             left: 0;
             right: 0;
@@ -192,7 +192,7 @@
             }
             #filter{
                 width: 25%;
-                height: 75px;
+                height: 100%;
                 display: block;
                 margin: 0px 10px;
             }
@@ -254,6 +254,15 @@
             <span class="clear-x" id="clear-district-input">×</span>
         </div>
         <div id="district-options"></div>
+        <!-- New district filter added here -->
+        <br />
+        <label for="party-select">Select or type a party:</label><br />
+        <div class="input-wrapper" style="width:100%;">
+            <input type="text" id="party-select" placeholder="Type Party name" autocomplete="off" />
+            <span class="clear-x" id="clear-party-input">×</span>
+        </div>
+        <div id="party-options"></div>
+        <div id="seatsHighlighted" style="text-align: center;vertical-align: bottom;margin:;padding: 10px;">Loading...</div>
     </div>
     <div id="chart">
         <div class="hemicycle" id="hemicycle" style="margin: 0 auto;"></div>
@@ -604,10 +613,9 @@
                         seat.addEventListener('click', (e) => {
                             e.stopPropagation();
                             updateViewerCard(member);
-
-                            // Optionally highlight selected seat
                             seatElements.forEach(({seat: s}) => s.classList.remove('highlight'));
                             seat.classList.add('highlight');
+                            updateHighlightedSeatsCount(); // Update count display on click highlight change
                         });
                         hemicycle.appendChild(seat);
                         seatElements.push({seat, member});
@@ -697,9 +705,101 @@
                 `Simple Majority (of ${totalFilled} filled seats): ${simpleMajority}`;
         }
 
+        const clearDistrictX = document.getElementById('clear-district-input');
+        const districtInput = document.getElementById('district-select');
+
+        // =========================
+        // PARTY FILTER FUNCTIONALITY
+        // =========================
+        const partyInput = document.getElementById('party-select');
+        const partyOptionsContainer = document.getElementById('party-options');
+        const clearPartyX = document.getElementById('clear-party-input');
+
+        // Party options
+        function getAllPartyOptions() {
+            return ["Democrat", "Republican"];
+        }
+
+        function showPartyOptions(filtered) {
+            partyOptionsContainer.innerHTML = '';
+            filtered.forEach(option => {
+                const div = document.createElement('div');
+                div.textContent = option;
+                div.style.padding = '6px 8px';
+                div.style.cursor = 'pointer';
+                div.addEventListener('mousedown', () => {
+                    partyInput.value = option;
+                    partyOptionsContainer.style.display = 'none';
+                    filterSeats();
+                    toggleClearButtons();
+                });
+                div.addEventListener('mouseover', () => {
+                    div.style.background = '#0074D9';
+                    div.style.color = 'white';
+                });
+                div.addEventListener('mouseout', () => {
+                    div.style.background = 'white';
+                    div.style.color = 'black';
+                });
+                partyOptionsContainer.appendChild(div);
+            });
+            partyOptionsContainer.style.display = filtered.length ? 'block' : 'none';
+        }
+
+        partyInput.addEventListener('focus', () => {
+            showPartyOptions(getAllPartyOptions());
+        });
+
+        partyInput.addEventListener('input', () => {
+            const val = partyInput.value.trim().toLowerCase();
+            if (!val) {
+                showPartyOptions(getAllPartyOptions());
+                filterSeats();
+                toggleClearButtons();
+                return;
+            }
+            const filtered = getAllPartyOptions().filter(option =>
+                option.toLowerCase().startsWith(val)
+            );
+            showPartyOptions(filtered);
+            filterSeats();
+            toggleClearButtons();
+        });
+
+        // Hide dropdown when clicked outside
+        document.addEventListener('click', e => {
+            if (!partyInput.contains(e.target) && !partyOptionsContainer.contains(e.target)) {
+                partyOptionsContainer.style.display = 'none';
+            }
+        });
+
+        // Clear party input
+        clearPartyX.addEventListener('click', () => {
+            partyInput.value = '';
+            filterSeats();
+            toggleClearButtons();
+            partyInput.focus();
+        });
+
+        // Update toggleClearButtons to include party
+        function toggleClearButtons() {
+            clearSearchX.style.display = searchInput.value ? 'block' : 'none';
+            clearStateX.style.display = stateInput.value ? 'block' : 'none';
+            clearDistrictX.style.display = districtInput.value ? 'block' : 'none';
+            clearPartyX.style.display = partyInput.value ? 'block' : 'none';
+        }
+
+        function updateHighlightedSeatsCount() {
+            const highlightedCount = document.querySelectorAll('.seat.highlight').length;
+            document.getElementById('seatsHighlighted').textContent = "Number of seats highlighted: " + highlightedCount;
+        }
+
+
+        // Modify filterSeats() to include party filtering
         function filterSeats() {
             const stateFilterText = stateInput.value.trim().toUpperCase();
             const districtFilterText = districtInput.value.trim().toLowerCase();
+            const partyFilterText = partyInput.value.trim().toLowerCase();
             const stateNameToCode = {
                 "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR",
                 "CALIFORNIA": "CA", "COLORADO": "CO", "CONNECTICUT": "CT", "DELAWARE": "DE",
@@ -727,23 +827,28 @@
             seatElements.forEach(({seat, member}) => {
                 const lastTerm = member.terms[member.terms.length -1];
                 const memberState = lastTerm.state.toUpperCase();
-                const memberDistrict = lastTerm.district ? lastTerm.district.toString() : "at large";
+                const memberDistrict = lastTerm.district ? lastTerm.district.toString().toLowerCase() : "at large";
+                const memberParty = lastTerm.party.toLowerCase();
                 const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
 
                 const stateMatch = !stateFilter || memberState === stateFilter;
                 const nameMatch = !nameFilter || fullName.includes(nameFilter);
-                const districtMatch = !districtFilterText || memberDistrict.toLowerCase() === districtFilterText;
+                const districtMatch = !districtFilterText || memberDistrict === districtFilterText;
+                const partyMatch = !partyFilterText || memberParty === partyFilterText;
 
-                if(stateMatch && nameMatch && districtMatch) {
+                if(stateMatch && nameMatch && districtMatch && partyMatch) {
                     seat.style.opacity = '1';
-                    seat.classList.remove('highlight');
+                    seat.classList.add('highlight');  // Add highlight here
                 } else {
                     seat.style.opacity = '0.15';
                     seat.classList.remove('highlight');
                 }
             });
 
-            if(nameFilter === '' && !stateFilter && !districtFilterText) return;
+
+            updateHighlightedSeatsCount(); // Update count display after filtering
+
+            if(nameFilter === '' && !stateFilter && !districtFilterText && !partyFilterText) return;
 
             let found = false;
             seatElements.forEach(({seat, member}) => {
@@ -766,15 +871,6 @@
             }
         }
 
-
-        const clearDistrictX = document.getElementById('clear-district-input');
-        const districtInput = document.getElementById('district-select');
-
-        function toggleClearButtons() {
-            clearSearchX.style.display = searchInput.value ? 'block' : 'none';
-            clearStateX.style.display = stateInput.value ? 'block' : 'none';
-            clearDistrictX.style.display = districtInput.value ? 'block' : 'none';
-        }
 
         clearDistrictX.addEventListener('click', () => {
             districtInput.value = '';
@@ -807,6 +903,7 @@
             searchInput.value = '';
             stateInput.value = '';
             districtInput.value = '';
+            partyInput.value = '';
             filterSeats();
             toggleClearButtons();
         });
