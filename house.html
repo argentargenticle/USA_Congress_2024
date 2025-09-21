@@ -39,6 +39,8 @@
         <li><span id="votesmart">Loading...</span></li>
         <li><span id="opensecrets">Loading...</span></li>
         <li><span id="govtrack">Loading...</span></li>
+        <li><span id="unusualWhales">Loading...</span></li>
+        <li><span id="trackAIPAC">Loading...</span></li>
     </ul>
 </div>
 <p><strong>Birthday:</strong> <span id="birthday">Loading...</span> <strong>Age:</strong> <span id="age">Loading...</span></p>
@@ -148,6 +150,32 @@
         if (!id || id === "N/A") return "N/A";
         return `<a href="https://www.govtrack.us/congress/members/${id}" target="_blank">GovTrack</a>`;
     }
+    function linkifyUnusualWhales(wikipediaName, officialName) {
+        let name = "";
+        if (wikipediaName) {
+            name = wikipediaName;
+        } else if (officialName) {
+            name = officialName;
+        } else {
+            return "N/A";
+        }
+        const encodedName = encodeURIComponent(name);
+        return `<a href="https://unusualwhales.com/politics/profile/${encodedName}" target="_blank">Unusual Whales</a>`;
+    }
+    function linkifyTrackAIPAC(stateFullName, wikipediaName, officialName) {
+        if (!stateFullName) return "N/A";
+        const stateLower = stateFullName.toLowerCase().replace(/ /g, "");
+        let namePart = "";
+        if (wikipediaName) {
+            namePart = wikipediaName;
+        } else if (officialName) {
+            namePart = officialName;
+        } else {
+            return "N/A";
+        }
+        const encodedName = encodeURIComponent(namePart);
+        return `<a href="https://www.trackaipac.com/states/${stateLower}?rq=${encodedName}" target="_blank">Track AIPAC</a>`;
+    }
 
     // Extract query params
     const query = window.location.search.slice(1);
@@ -188,6 +216,8 @@
             ["nickname","birthday","age","party","termStart","termEnd","termCountdown","chamber"].forEach(id=>document.getElementById(id).textContent="");
             ["chairmanList","rankingMemberList","memberList"].forEach(id=>document.getElementById(id).innerHTML="<li>None</li>");
             document.getElementById("portraitImg").src="";
+            document.getElementById("unusualWhales").textContent = "";
+            document.getElementById("trackAIPAC").textContent = "";
             return;
         }
 
@@ -196,6 +226,7 @@
 
         const officialName=legislator.name.official_full;
         const wikipediaName=legislator.id.wikipedia || "";
+        const fullStateName = stateNames[stateAbbr] || "";
 
         document.getElementById("officialFullName").textContent=officialName;
         if(legislator.bio?.nickname){
@@ -211,6 +242,8 @@
         document.getElementById("votesmart").innerHTML=linkifyVoteSmart(legislator.id.votesmart);
         document.getElementById("opensecrets").innerHTML=linkifyOpenSecrets(legislator.id.opensecrets,officialName);
         document.getElementById("govtrack").innerHTML=linkifyGovTrack(legislator.id.govtrack);
+        document.getElementById("unusualWhales").innerHTML=linkifyUnusualWhales(wikipediaName, officialName);
+        document.getElementById("trackAIPAC").innerHTML=linkifyTrackAIPAC(fullStateName, wikipediaName, officialName);
 
         const termStart=formatTermDate(t.start), termEnd=formatTermDate(t.end);
         document.getElementById("termStart").textContent=termStart;
@@ -274,6 +307,8 @@
     }).catch(err=>{
         console.error(err);
         document.getElementById("officialFullName").textContent="Error loading legislator data";
+        document.getElementById("unusualWhales").textContent = "";
+        document.getElementById("trackAIPAC").textContent = "";
     });
 </script>
 </body>
