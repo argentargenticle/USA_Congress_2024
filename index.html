@@ -16,7 +16,7 @@
             width: 300px;
         }
         #search-input,
-        #state-select {
+        #state-select, #district-select {
             font-size: 14px;
             margin: 0px;
             padding: 6px 28px 6px 8px;
@@ -82,7 +82,7 @@
         #header {
             margin: 10px 0px 0px 0px;
         }
-        #state-options {
+        #state-options, #district-options {
             width: 99%;
             left: 0;
             right: 0;
@@ -246,6 +246,14 @@
             <span class="clear-x" id="clear-state-input">×</span>
         </div>
         <div id="state-options"></div>
+        <!-- New district filter added here -->
+        <br />
+        <label for="district-select">Select or type a district:</label><br />
+        <div class="input-wrapper" style="width:100%;">
+            <input type="text" id="district-select" placeholder="Type 1-52 or At Large" autocomplete="off" />
+            <span class="clear-x" id="clear-district-input">×</span>
+        </div>
+        <div id="district-options"></div>
     </div>
     <div id="chart">
         <div class="hemicycle" id="hemicycle" style="margin: 0 auto;"></div>
@@ -360,6 +368,69 @@
             document.addEventListener('click', (e) => {
                 if (!stateInput.contains(e.target) && !stateOptionsContainer.contains(e.target)) {
                     stateOptionsContainer.style.display = 'none';
+                }
+            });
+            const districtInput = document.getElementById('district-select');
+            const districtOptionsContainer = document.getElementById('district-options');
+
+            function getAllDistrictOptions() {
+                const options = [];
+                for (let i = 1; i <= 52; i++) {
+                    options.push(i.toString());
+                }
+                options.push("At Large");
+                return options;
+            }
+
+            function showDistrictOptions(filtered) {
+                districtOptionsContainer.innerHTML = '';
+                filtered.forEach(item => {
+                    const div = document.createElement('div');
+                    div.textContent = item;
+                    div.style.padding = '6px 8px';
+                    div.style.cursor = 'pointer';
+                    div.addEventListener('mousedown', () => {
+                        districtInput.value = item;
+                        districtOptionsContainer.style.display = 'none';
+                        filterSeats();
+                        toggleClearButtons();
+                    });
+                    div.addEventListener('mouseover', () => {
+                        div.style.background = '#0074D9';
+                        div.style.color = 'white';
+                    });
+                    div.addEventListener('mouseout', () => {
+                        div.style.background = 'white';
+                        div.style.color = 'black';
+                    });
+                    districtOptionsContainer.appendChild(div);
+                });
+                districtOptionsContainer.style.display = filtered.length ? 'block' : 'none';
+            }
+
+            districtInput.addEventListener('focus', () => {
+                showDistrictOptions(getAllDistrictOptions());
+            });
+
+            districtInput.addEventListener('input', () => {
+                const val = districtInput.value.trim().toLowerCase();
+                if (!val) {
+                    showDistrictOptions(getAllDistrictOptions());
+                    filterSeats();
+                    toggleClearButtons();
+                    return;
+                }
+                const filtered = getAllDistrictOptions().filter(option =>
+                    option.toLowerCase().startsWith(val)
+                );
+                showDistrictOptions(filtered);
+                filterSeats();
+                toggleClearButtons();
+            });
+
+            document.addEventListener('click', e => {
+                if (!districtInput.contains(e.target) && !districtOptionsContainer.contains(e.target)) {
+                    districtOptionsContainer.style.display = 'none';
                 }
             });
         })();
@@ -569,7 +640,9 @@
 
         function filterSeats() {
             const stateFilterText = stateInput.value.trim().toUpperCase();
-            const stateNameToCode = { "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR",
+            const districtFilterText = districtInput.value.trim().toLowerCase();
+            const stateNameToCode = {
+                "ALABAMA": "AL", "ALASKA": "AK", "ARIZONA": "AZ", "ARKANSAS": "AR",
                 "CALIFORNIA": "CA", "COLORADO": "CO", "CONNECTICUT": "CT", "DELAWARE": "DE",
                 "FLORIDA": "FL", "GEORGIA": "GA", "HAWAII": "HI", "IDAHO": "ID",
                 "ILLINOIS": "IL", "INDIANA": "IN", "IOWA": "IA", "KANSAS": "KS",
@@ -581,21 +654,28 @@
                 "OREGON": "OR", "PENNSYLVANIA": "PA", "RHODE ISLAND": "RI", "SOUTH CAROLINA": "SC",
                 "SOUTH DAKOTA": "SD", "TENNESSEE": "TN", "TEXAS": "TX", "UTAH": "UT",
                 "VERMONT": "VT", "VIRGINIA": "VA", "WASHINGTON": "WA", "WEST VIRGINIA": "WV",
-                "WISCONSIN": "WI", "WYOMING": "WY" };
+                "WISCONSIN": "WI", "WYOMING": "WY"
+            };
             let stateFilter = "";
             if(stateFilterText.length === 2 && votingStates.has(stateFilterText)) {
                 stateFilter = stateFilterText;
             } else if(stateNameToCode[stateFilterText]) {
                 stateFilter = stateNameToCode[stateFilterText];
             }
+
             const nameFilter = searchInput.value.toLowerCase().trim();
+
             seatElements.forEach(({seat, member}) => {
                 const lastTerm = member.terms[member.terms.length -1];
                 const memberState = lastTerm.state.toUpperCase();
+                const memberDistrict = lastTerm.district ? lastTerm.district.toString() : "at large";
                 const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
+
                 const stateMatch = !stateFilter || memberState === stateFilter;
                 const nameMatch = !nameFilter || fullName.includes(nameFilter);
-                if(stateMatch && nameMatch) {
+                const districtMatch = !districtFilterText || memberDistrict.toLowerCase() === districtFilterText;
+
+                if(stateMatch && nameMatch && districtMatch) {
                     seat.style.opacity = '1';
                     seat.classList.remove('highlight');
                 } else {
@@ -603,11 +683,13 @@
                     seat.classList.remove('highlight');
                 }
             });
-            if(nameFilter === '' && !stateFilter) return;
+
+            if(nameFilter === '' && !stateFilter && !districtFilterText) return;
+
             let found = false;
             seatElements.forEach(({seat, member}) => {
                 const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-                const memberState = member.terms[member.terms.length-1].state.toUpperCase();
+                const memberState = member.terms[member.terms.length -1].state.toUpperCase();
                 if(fullName === nameFilter && (!stateFilter || memberState === stateFilter)) {
                     seat.style.opacity = '1';
                     seat.classList.add('highlight');
@@ -617,17 +699,31 @@
             if(!found) {
                 seatElements.forEach(({seat, member}) => {
                     const fullName = (member.name.first + ' ' + member.name.last).toLowerCase();
-                    const memberState = member.terms[member.terms.length-1].state.toUpperCase();
+                    const memberState = member.terms[member.terms.length -1].state.toUpperCase();
                     if(fullName.includes(nameFilter) && (!stateFilter || memberState === stateFilter)) {
                         seat.classList.add('highlight');
                     }
                 });
             }
         }
+
+
+        const clearDistrictX = document.getElementById('clear-district-input');
+        const districtInput = document.getElementById('district-select');
+
         function toggleClearButtons() {
             clearSearchX.style.display = searchInput.value ? 'block' : 'none';
             clearStateX.style.display = stateInput.value ? 'block' : 'none';
+            clearDistrictX.style.display = districtInput.value ? 'block' : 'none';
         }
+
+        clearDistrictX.addEventListener('click', () => {
+            districtInput.value = '';
+            filterSeats();
+            toggleClearButtons();
+            districtInput.focus();
+        });
+
         clearSearchX.addEventListener('click', () => {
             searchInput.value = '';
             filterSeats();
@@ -651,6 +747,7 @@
         clearSearchBtn.addEventListener('click', () => {
             searchInput.value = '';
             stateInput.value = '';
+            districtInput.value = '';
             filterSeats();
             toggleClearButtons();
         });
