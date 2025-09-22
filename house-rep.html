@@ -43,6 +43,15 @@
         <li><span id="trackAIPAC">Loading...</span></li>
     </ul>
 </div>
+<button id="moreInfoBtn" style="margin-top: 10px; padding: 8px 16px; border-radius: 12px; cursor: pointer;">More Info about Links</button>
+<div id="linksExplanation" style="display:none; background-color: #f0f0f0; border-radius: 12px; padding: 15px; margin-top: 10px; font-size: 16px; max-width: 900px;">
+    <p><strong>Ballotpedia:</strong> An online encyclopedia of American politics and elections.</p>
+    <p><strong>Vote Smart:</strong> Provides biographical, voting record, and interest group ratings for politicians. Users get 5 free views per day before needing to create a free account to continue viewing pages.</p>
+    <p><strong>Open Secrets:</strong> Tracks campaign contributions and lobbying expenditures.</p>
+    <p><strong>GovTrack:</strong> Tracks bills, votes, and legislator profiles in Congress.</p>
+    <p><strong>Unusual Whales:</strong> Tracks unusual options trading activity related to politicians.</p>
+    <p><strong>Track AIPAC:</strong> Tracks campaign contributions and political influence related to the American Israel Public Affairs Committee.</p>
+</div>
 <p><strong>Birthday:</strong> <span id="birthday">Loading...</span> <strong>Age:</strong> <span id="age">Loading...</span></p>
 <div id="startDates"></div>
 <div id="tenure"></div>
@@ -72,6 +81,17 @@
         "SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","VI":"US Virgin Islands","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington",
         "WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"
     };
+
+    document.getElementById("moreInfoBtn").addEventListener("click", function() {
+        const explanationDiv = document.getElementById("linksExplanation");
+        if (explanationDiv.style.display === "none") {
+            explanationDiv.style.display = "block";
+            this.textContent = "Less Info";
+        } else {
+            explanationDiv.style.display = "none";
+            this.textContent = "More Info";
+        }
+    });
 
     // Helper functions
     function calculateAge(dateStr){
