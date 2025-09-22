@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Legislator Info with Committee Roles</title>
+    <style>
+        body { margin: 0px 120px; font-size: 18px; }
+        .info { display: inline-block; vertical-align: top; }
+        #menu ul { list-style-type: none; margin: 10px 0px; padding: 0; display: flex; }
+        #menu ul li a { display: inline-block; color: black; background-color: white; padding:8px 16px; border-radius: 50px; margin: 0px 3px; text-decoration: none; }
+        #links ul { list-style-type: none; margin: 10px 0px; padding: 0; display: flex; background-color: #d3d3d3; border-radius: 25px; padding: 10px; }
+        #links ul li a { color: black; text-decoration: none; margin: 0px 10px; }
+        #links ul li a:hover { color: white; }
+    </style>
+</head>
+<body>
+<div id="menu">
+    <ul>
+        <li><a href="house.html">Full USA Congressional House</a></li>
+    </ul>
+</div>
+<div style="display:inline-block;">
+    <img id="portraitImg" alt="Legislator Portrait" style="width:250px; height:auto;" />
+</div>
+<div class="info">
+    <span id="officialFullName">Loading...</span>
+    <div id="nicknameContainer" style="display:none"><p><strong>Nickname:</strong> <span id="nickname"></span></p></div>
+    <br /><strong>State:</strong> <span id="stateFullName">Loading...</span>
+    <br /><strong>District #:</strong> <span id="districtNum"></span>
+    <br /><strong>Party:</strong> <span id="party">Loading...</span>
+    <br /><strong>Term:</strong> <span id="termStart">Loading...</span> - <span id="termEnd">Loading...</span>
+    <br /><strong>Time until term ends:</strong> <span id="termCountdown">Loading...</span>
+    <br /><strong>Chamber:</strong> <span id="chamber">Loading...</span>
+</div>
+<div id="links">
+    <ul>
+        <li><span id="ballotpedia">Loading...</span></li>
+        <li><span id="votesmart">Loading...</span></li>
+        <li><span id="opensecrets">Loading...</span></li>
+        <li><span id="govtrack">Loading...</span></li>
+        <li><span id="unusualWhales">Loading...</span></li>
+        <li><span id="trackAIPAC">Loading...</span></li>
+    </ul>
+</div>
+<p><strong>Birthday:</strong> <span id="birthday">Loading...</span> <strong>Age:</strong> <span id="age">Loading...</span></p>
+<div id="startDates"></div>
+<div id="tenure"></div>
+<div id="committeeAssignments" style="margin-top:20px;">
+    <h2>Current Committee and Subcommittee Assignments</h2>
+    <h3>Chairman</h3>
+    <ul id="chairmanList">Loading...</ul>
+    <h3>Ranking Member</h3>
+    <ul id="rankingMemberList">Loading...</ul>
+    <h3>Member</h3>
+    <ul id="memberList">Loading...</ul>
+</div>
+<script>
+    const votingStates = new Set([
+        "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+        "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+        "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+        "VA","WA","WV","WI","WY"
+    ]);
+
+    const stateNames = {
+        "AL":"Alabama","AK":"Alaska","AS":"American Samoa","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware",
+        "DC":"District Of Columbia","FL":"Florida","GA":"Georgia","GU":"Guam","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas",
+        "KY":"Kentucky","LA":"Louisiana","ME":"Maine","MH":"Marshall Islands","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi",
+        "MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina",
+        "ND":"North Dakota","NP":"Northern Mariana Islands","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","PR":"Puerto Rico","RI":"Rhode Island",
+        "SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","VI":"US Virgin Islands","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington",
+        "WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"
+    };
+
+    // Helper functions
+    function calculateAge(dateStr){
+        if(!dateStr) return "N/A";
+        const d = new Date(dateStr), t = new Date();
+        let a = t.getFullYear() - d.getFullYear();
+        if(t.getMonth() < d.getMonth() || (t.getMonth()===d.getMonth() && t.getDate()<d.getDate())) a--;
+        return a;
+    }
+    function formatLongDate(dateStr){
+        if(!dateStr) return "N/A";
+        const d=new Date(dateStr);
+        if(isNaN(d)) return "N/A";
+        return d.toLocaleDateString("en-US", {weekday:"long", year:"numeric", month:"long", day:"numeric"});
+    }
+    function formatTermDate(dateStr){
+        if(!dateStr) return "N/A";
+        const d=new Date(dateStr);
+        if(isNaN(d)) return "N/A";
+        return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`;
+    }
+    function calculateCountdown(endDateStr){
+        if(!endDateStr) return "N/A";
+        const now = new Date(), end = new Date(endDateStr);
+        if(end <= now) return "Term ended";
+        let y = end.getFullYear() - now.getFullYear();
+        let m = end.getMonth() - now.getMonth();
+        let d = end.getDate() - now.getDate();
+        if(d < 0){ m--; d += new Date(end.getFullYear(), end.getMonth(), 0).getDate(); }
+        if(m < 0){ y--; m += 12; }
+        let parts = [];
+        if(y > 0) parts.push(y + " year" + (y>1?"s":""));
+        if(m > 0) parts.push(m + " month" + (m>1?"s":""));
+        parts.push(d + " day" + (d!==1?"s":""));
+        return parts.join(", ");
+    }
+    function calculateTenure(startDateStr){
+        if(!startDateStr) return "N/A";
+        const now = new Date(), start = new Date(startDateStr);
+        if(start > now) return "N/A";
+        let y = now.getFullYear() - start.getFullYear();
+        let m = now.getMonth() - start.getMonth();
+        let d = now.getDate() - start.getDate();
+        if(d < 0){ m--; d += new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+        if(m < 0){ y--; m += 12; }
+        let parts = [];
+        if(y > 0) parts.push(y + " year" + (y>1?"s":""));
+        if(m > 0) parts.push(m + " month" + (m>1?"s":""));
+        if(d > 0) parts.push(d + " day" + (d!==1?"s":""));
+        return parts.length ? parts.join(", ") : "Less than a day";
+    }
+
+    function linkifyBallotpediaOrName(id, wikipediaName, officialName) {
+        if (id && id !== "N/A") {
+            return `<a href="https://ballotpedia.org/${encodeURIComponent(id.replace(/ /g, "_"))}" target="_blank">Ballotpedia</a>`;
+        } else if (wikipediaName) {
+            const slug = encodeURIComponent(wikipediaName.replace(/ /g, "_"));
+            return `<a href="https://ballotpedia.org/${slug}" target="_blank">Ballotpedia</a>`;
+        } else if (officialName) {
+            const slug = encodeURIComponent(officialName.replace(/ /g, "_"));
+            return `<a href="https://ballotpedia.org/${slug}" target="_blank">Ballotpedia</a>`;
+        } else {
+            return "N/A";
+        }
+    }
+    function linkifyVoteSmart(id) {
+        if (!id || id === "N/A") return "N/A";
+        return `<a href="https://justfacts.votesmart.org/candidate/biography/${id}/" target="_blank">Vote Smart</a>`;
+    }
+    function linkifyOpenSecrets(id, n) {
+        if (!id || id === "N/A" || !n || n === "N/A") return "N/A";
+        const url = n.replace(/ /g, "-").replace(/[^a-zA-Z0-9\-]/g, "");
+        return `<a href="https://www.opensecrets.org/members-of-congress/${url}/summary?cid=${id}" target="_blank">Open Secrets</a>`;
+    }
+    function linkifyGovTrack(id) {
+        if (!id || id === "N/A") return "N/A";
+        return `<a href="https://www.govtrack.us/congress/members/${id}" target="_blank">GovTrack</a>`;
+    }
+    function linkifyUnusualWhales(wikipediaName, officialName) {
+        let name = "";
+        if (wikipediaName) {
+            name = wikipediaName;
+        } else if (officialName) {
+            name = officialName;
+        } else {
+            return "N/A";
+        }
+        const encodedName = encodeURIComponent(name);
+        return `<a href="https://unusualwhales.com/politics/profile/${encodedName}" target="_blank">Unusual Whales</a>`;
+    }
+    function linkifyTrackAIPAC(stateFullName, wikipediaName, officialName) {
+        if (!stateFullName) return "N/A";
+        const stateLower = stateFullName.toLowerCase().replace(/ /g, "");
+        let namePart = "";
+        if (wikipediaName) {
+            namePart = wikipediaName;
+        } else if (officialName) {
+            namePart = officialName;
+        } else {
+            return "N/A";
+        }
+        const encodedName = encodeURIComponent(namePart);
+        return `<a href="https://www.trackaipac.com/states/${stateLower}?rq=${encodedName}" target="_blank">Track AIPAC</a>`;
+    }
+
+    // Extract query params
+    const query = window.location.search.slice(1);
+    let stateAbbr="N/A", districtNum="N/A";
+
+    if(query){
+        if(query.includes("-")){ // STATE-DISTRICT format
+            const [abbr,district] = query.split("-");
+            stateAbbr = abbr.toUpperCase();
+            districtNum = district;
+        } else {
+            stateAbbr = query.toUpperCase();
+            districtNum = "AUTO"; // we'll resolve it later
+        }
+    }
+    document.getElementById("stateFullName").textContent = stateNames[stateAbbr]||"Unknown";
+    document.getElementById("districtNum").textContent = districtNum;
+
+    Promise.all([
+        fetch("https://unitedstates.github.io/congress-legislators/legislators-current.json").then(r=>r.json()),
+        fetch("https://unitedstates.github.io/congress-legislators/committee-membership-current.json").then(r=>r.json()),
+        fetch("https://unitedstates.github.io/congress-legislators/committees-current.json").then(r=>r.json())
+    ]).then(([legislatorsData, membershipData, committeesData])=>{
+        const today=new Date();
+
+        // Find legislator
+        let legislator = legislatorsData.find(leg=>{
+            if(!leg.terms||!leg.terms.length) return false;
+            const term=leg.terms[leg.terms.length-1];
+            if(term.type!=="rep" || new Date(term.end)<=today) return false;
+            if(term.state!==stateAbbr || !votingStates.has(term.state)) return false;
+            if(districtNum==="AUTO"){ return true; } // pick any
+            return String(term.district)===String(districtNum);
+        });
+
+        if(!legislator){
+            document.getElementById("officialFullName").textContent="No current representative found";
+            ["nickname","birthday","age","party","termStart","termEnd","termCountdown","chamber"].forEach(id=>document.getElementById(id).textContent="");
+            ["chairmanList","rankingMemberList","memberList"].forEach(id=>document.getElementById(id).innerHTML="<li>None</li>");
+            document.getElementById("portraitImg").src="";
+            document.getElementById("unusualWhales").textContent = "";
+            document.getElementById("trackAIPAC").textContent = "";
+            return;
+        }
+
+        const t=legislator.terms[legislator.terms.length-1];
+        if(districtNum==="AUTO") document.getElementById("districtNum").textContent = t.district || "At-Large";
+
+        const officialName=legislator.name.official_full;
+        const wikipediaName=legislator.id.wikipedia || "";
+        const fullStateName = stateNames[stateAbbr] || "";
+
+        document.getElementById("officialFullName").textContent=officialName;
+        if(legislator.bio?.nickname){
+            document.getElementById("nicknameContainer").style.display="block";
+            document.getElementById("nickname").textContent=legislator.bio.nickname;
+        }
+        document.getElementById("birthday").textContent=formatLongDate(legislator.bio?.birthday);
+        document.getElementById("age").textContent=calculateAge(legislator.bio?.birthday);
+        document.getElementById("chamber").textContent=t.type==="rep"?"House":"Senate";
+        document.getElementById("party").textContent=t.party;
+
+        document.getElementById("ballotpedia").innerHTML=linkifyBallotpediaOrName(legislator.id.ballotpedia,wikipediaName,officialName);
+        document.getElementById("votesmart").innerHTML=linkifyVoteSmart(legislator.id.votesmart);
+        document.getElementById("opensecrets").innerHTML=linkifyOpenSecrets(legislator.id.opensecrets,officialName);
+        document.getElementById("govtrack").innerHTML=linkifyGovTrack(legislator.id.govtrack);
+        document.getElementById("unusualWhales").innerHTML=linkifyUnusualWhales(wikipediaName, officialName);
+        document.getElementById("trackAIPAC").innerHTML=linkifyTrackAIPAC(fullStateName, wikipediaName, officialName);
+
+        const termStart=formatTermDate(t.start), termEnd=formatTermDate(t.end);
+        document.getElementById("termStart").textContent=termStart;
+        document.getElementById("termEnd").textContent=termEnd;
+        document.getElementById("termCountdown").textContent=calculateCountdown(t.end);
+
+        const firstTerm=legislator.terms[0].start;
+        const tenureCongress=calculateTenure(firstTerm);
+        document.getElementById("startDates").innerHTML=`<p><strong>Started in Congress:</strong> ${formatLongDate(firstTerm)}</p>`;
+        document.getElementById("tenure").innerHTML=`<p><strong>Time in Congress:</strong> ${tenureCongress}</p>`;
+
+        document.body.style.backgroundColor = t.party==="Republican"?"#ffcccc":t.party==="Democrat"?"#cce5ff":"";
+
+        document.getElementById("portraitImg").src=`https://clerk.house.gov/images/members/${legislator.id.bioguide}.jpg`;
+        document.getElementById("portraitImg").alt=`Portrait of ${officialName}`;
+
+        // Committees
+        const bioguide = legislator.id.bioguide;
+        const committeeMap = {};
+
+        committeesData.forEach(comm=>{
+            if(comm.thomas_id) committeeMap[comm.thomas_id] = comm;
+            (comm.subcommittees||[]).forEach(sub=>{
+                if(sub.thomas_id) committeeMap[comm.thomas_id+sub.thomas_id] = {
+                    name: `${comm.name} - ${sub.name}`
+                };
+            });
+        });
+
+        let chairman=[], ranking=[], member=[];
+        for(const committeeId in membershipData){
+            membershipData[committeeId].forEach(m=>{
+                if(m.bioguide === bioguide){
+                    let name = committeeMap[committeeId] ? committeeMap[committeeId].name : committeeId;
+                    if(m.subcommittee){
+                        const subKey = committeeId + m.subcommittee;
+                        if(committeeMap[subKey]) name = committeeMap[subKey].name;
+                    }
+                    const title = m.title || "Member";
+                    const entry = `${name} (${title})`;
+                    const titleLower = title.toLowerCase();
+                    if(titleLower.includes("chair")){
+                        chairman.push(entry);
+                    } else if(titleLower.includes("ranking")){
+                        ranking.push(entry);
+                    } else {
+                        member.push(entry);
+                    }
+                }
+            });
+        }
+
+        function fillList(id, items){
+            document.getElementById(id).innerHTML = items.length ? items.map(i=>`<li>${i}</li>`).join("") : "<li>None</li>";
+        }
+
+        fillList("chairmanList", chairman);
+        fillList("rankingMemberList", ranking);
+        fillList("memberList", member);
+
+    }).catch(err=>{
+        console.error(err);
+        document.getElementById("officialFullName").textContent="Error loading legislator data";
+        document.getElementById("unusualWhales").textContent = "";
+        document.getElementById("trackAIPAC").textContent = "";
+    });
+</script>
+</body>
+</html>
