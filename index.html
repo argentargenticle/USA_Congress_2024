@@ -16,7 +16,7 @@
             width: 300px;
         }
         #search-input,
-        #state-select, #district-select, #party-select {
+        #state-select, #district-select, #party-select, #committee-select, #subcommittee-select {
             font-size: 14px;
             margin: 0px;
             padding: 6px 28px 6px 8px;
@@ -60,19 +60,6 @@
             border-color: gold;
             z-index: 10;
         }
-        .tooltip {
-            position: absolute;
-            background: rgba(50,50,50,0.9);
-            color: white;
-            padding: 6px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            pointer-events: none;
-            white-space: nowrap;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
         .summary {
             font-size: 16px;
             font-weight: bold;
@@ -82,7 +69,7 @@
         #header {
             margin: 10px 0px 0px 0px;
         }
-        #state-options, #district-options, #party-options {
+        #state-options, #district-options, #party-options, #committee-options, #subcommittee-options {
             width: 99%;
             left: 0;
             right: 0;
@@ -262,6 +249,19 @@
             <span class="clear-x" id="clear-party-input">×</span>
         </div>
         <div id="party-options"></div>
+        <br />
+        <label for="committee-select">Select or type a committee:</label><br />
+        <div class="input-wrapper" style="width:100%;">
+            <input type="text" id="committee-select" placeholder="Type committee name" autocomplete="off" />
+            <span class="clear-x" id="clear-committee-input">×</span>
+        </div>
+        <div id="committee-options"></div>
+        <label for="subcommittee-select">Select or type a subcommittee:</label><br />
+        <div class="input-wrapper" style="width:100%;">
+            <input type="text" id="subcommittee-select" placeholder="Type subcommittee name or code" autocomplete="off" />
+            <span class="clear-x" id="clear-subcommittee-input">×</span>
+        </div>
+        <div id="subcommittee-options"></div>
         <div id="seatsHighlighted" style="text-align: center;vertical-align: bottom;margin:;padding: 10px;">Loading...</div>
     </div>
     <div id="chart">
@@ -329,6 +329,12 @@
         const clearDistrictX = document.getElementById('clear-district-input');
         const clearPartyX = document.getElementById('clear-party-input');
         const clearSearchBtn = document.getElementById('clear-search');
+        const committeeInput = document.getElementById('committee-select');
+        const committeeOptions = document.getElementById('committee-options');
+        const clearCommitteeX = document.getElementById('clear-committee-input');
+        const subcommitteeInput = document.getElementById('subcommittee-select');
+        const subcommitteeOptions = document.getElementById('subcommittee-options');
+        const clearSubcommitteeX = document.getElementById('clear-subcommittee-input');
 
         const hemicycle = document.getElementById('hemicycle');
         const tooltip = document.getElementById('tooltip');
@@ -343,6 +349,11 @@
 
         const numberRows=11, fullRadius=250, fullGap=25;
         let members = [], seatEls = [];
+
+        let committeeMembershipData = {};
+        let committeesData = [];
+        let committeeNames = [];
+        let subcommitteeNames = [];
 
         function partyClass(p){ return p==='Democrat'?'democrat':p==='Republican'?'republican':'vacant'; }
 
@@ -403,6 +414,12 @@
             if (!partyInput.contains(e.target) && !partyOptions.contains(e.target)) {
                 partyOptions.style.display = 'none';
             }
+            if (!committeeInput.contains(e.target) && !committeeOptions.contains(e.target)) {
+                committeeOptions.style.display = 'none';
+            }
+            if (!subcommitteeInput.contains(e.target) && !subcommitteeOptions.contains(e.target)) {
+                subcommitteeOptions.style.display = 'none';
+            }
         });
 
         function selectState(item) {
@@ -457,12 +474,53 @@
             toggleClear();
         }
 
+        // Committee input handlers
+        committeeInput.addEventListener('focus', () => showOptions(committeeOptions, ALL_PARTY_OPTIONS, selectCommittee));
+        committeeInput.addEventListener('input', () => {
+            const v = committeeInput.value.trim().toLowerCase();
+            if (!v) {
+                showOptions(committeeOptions, ALL_PARTY_OPTIONS, selectCommittee);
+                filterSeats();
+                toggleClear();
+                return;
+            }
+            showOptions(committeeOptions, ALL_PARTY_OPTIONS.filter(o => o.toLowerCase().startsWith(v)), selectCommittee);
+            filterSeats();
+            toggleClear();
+        });
+        function selectCommittee(item) {
+            committeeInput.value = item;
+            committeeOptions.style.display = 'none';
+            filterSeats();
+            toggleClear();
+        }
+
+        // Subcommittee input handlers
+        subcommitteeInput.addEventListener('focus', () => {
+            showOptions(subcommitteeOptions, getFilteredSubcommittees(), selectSubcommittee);
+        });
+        subcommitteeInput.addEventListener('input', () => {
+            const v = subcommitteeInput.value.trim().toLowerCase();
+            const filtered = getFilteredSubcommittees().filter(o => o.toLowerCase().includes(v));
+            showOptions(subcommitteeOptions, filtered, selectSubcommittee);
+            filterSeats();
+            toggleClear();
+        });
+        function selectSubcommittee(item) {
+            subcommitteeInput.value = item;
+            subcommitteeOptions.style.display = 'none';
+            filterSeats();
+            toggleClear();
+        }
+
         clearStateX.onclick = () => { stateInput.value = ''; filterSeats(); toggleClear(); stateInput.focus(); }
         clearDistrictX.onclick = () => { districtInput.value = ''; filterSeats(); toggleClear(); districtInput.focus(); }
         clearPartyX.onclick = () => { partyInput.value = ''; filterSeats(); toggleClear(); partyInput.focus(); }
+        clearCommitteeX.onclick = () => { committeeInput.value = ''; filterSeats(); toggleClear(); committeeInput.focus(); }
+        clearSubcommitteeX.onclick = () => { subcommitteeInput.value = ''; filterSeats(); toggleClear(); subcommitteeInput.focus(); }
         clearSearchX.onclick = () => { searchInput.value = ''; filterSeats(); toggleClear(); searchInput.focus(); }
         clearSearchBtn.onclick = () => {
-            searchInput.value = stateInput.value = districtInput.value = partyInput.value = '';
+            searchInput.value = stateInput.value = districtInput.value = partyInput.value = committeeInput.value = subcommitteeInput.value = '';
             filterSeats();
             toggleClear();
         }
@@ -474,30 +532,133 @@
             clearStateX.style.display = stateInput.value ? 'block' : 'none';
             clearDistrictX.style.display = districtInput.value ? 'block' : 'none';
             clearPartyX.style.display = partyInput.value ? 'block' : 'none';
+            clearCommitteeX.style.display = committeeInput.value ? 'block' : 'none';
+            clearSubcommitteeX.style.display = subcommitteeInput.value ? 'block' : 'none';
         }
 
         // Fetch members data and prepare seats
         function fetchAndPrepareMembers() {
-            fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json')
-                .then(r => r.json())
-                .then(data => {
-                    const now = new Date();
-                    members = data.filter(m => {
-                        if (!m.terms?.length) return false;
-                        const t = m.terms[m.terms.length - 1];
-                        return t.type === 'rep' && (!t.end || new Date(t.end) > now) && VOTING_STATES.has(t.state);
-                    }).sort((a, b) => {
-                        const aT = a.terms[a.terms.length - 1], bT = b.terms[b.terms.length - 1];
-                        return aT.state === bT.state ? (aT.district || 0) - (bT.district || 0) : aT.state.localeCompare(bT.state);
-                    });
-                    drawHemicycle();
-                    updateSummary();
-                    toggleClear();
-                })
-                .catch(e => {
-                    console.error('Failed to load data:', e);
-                    hemicycle.textContent = 'Failed to load data.';
+            Promise.all([
+                fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json').then(r=>r.json()),
+                fetch('https://unitedstates.github.io/congress-legislators/committee-membership-current.json').then(r=>r.json()),
+                fetch('https://unitedstates.github.io/congress-legislators/committees-current.json').then(r=>r.json())
+            ]).then(([data, committeeMembershipData, committeesData]) => {
+                const now = new Date();
+                members = data.filter(m => {
+                    if (!m.terms?.length) return false;
+                    const t = m.terms[m.terms.length - 1];
+                    return t.type === 'rep' && (!t.end || new Date(t.end) > now) && VOTING_STATES.has(t.state);
+                }).sort((a, b) => {
+                    const aT = a.terms[a.terms.length - 1], bT = b.terms[b.terms.length - 1];
+                    return aT.state === bT.state ? (aT.district || 0) - (bT.district || 0) : aT.state.localeCompare(bT.state);
                 });
+                // Annotate each member with their committee/subcommittee assignments
+                members.forEach(member => {
+                    member.committees = [];
+                    const bioguide = member.id.bioguide;
+                    for (const commId in committeeMembershipData) {
+                        // Only keep house and joint committees/subcommittees
+                        if (/^[A-Z]{4}$/.test(commId)) {
+                            const commObj = committeesData.find(c => c.thomas_id === commId && (c.type === 'house' || c.type === 'joint'));
+                            if (commObj) {
+                                committeeMembershipData[commId].forEach(m => {
+                                    if (m.bioguide === bioguide) {
+                                        member.committees.push({ name: commObj.name, isSubcommittee: false });
+                                    }
+                                });
+                            }
+                        }
+                        // Subcommittee: four-letter acronym + number
+                        else if (/^[A-Z]{4}\d+$/.test(commId)) {
+                            const parentId = commId.slice(0, 4);
+                            const subId = commId.slice(4);
+                            const commObj = committeesData.find(c => c.thomas_id === parentId && (c.type === 'house' || c.type === 'joint'));
+                            if (commObj && commObj.subcommittees) {
+                                const subObj = commObj.subcommittees.find(s => s.thomas_id === subId);
+                                if (subObj) {
+                                    committeeMembershipData[commId].forEach(m => {
+                                        if (m.bioguide === bioguide) {
+                                            member.committees.push({ name: commObj.name + ' - ' + subObj.name, isSubcommittee: true });
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                });
+                // Build committee and subcommittee names for dropdown
+                committeeNames = [];
+                subcommitteeNames = [];
+                committeesData.forEach(comm => {
+                    if ((comm.type === 'house' || comm.type === 'joint') && comm.name) committeeNames.push(comm.name);
+                    if ((comm.type === 'house' || comm.type === 'joint') && comm.subcommittees) {
+                        comm.subcommittees.forEach(sub => {
+                            if(sub.name) {
+                                const subId = comm.thomas_id + sub.thomas_id;
+                                subcommitteeNames.push({
+                                    display: comm.name + ' - ' + sub.name,
+                                    value: subId,
+                                    parent: comm.name
+                                });
+                            }
+                        });
+                    }
+                });
+                committeeNames = Array.from(new Set(committeeNames)).sort();
+                // Setup committee filter options
+                committeeInput.addEventListener('focus', () => showOptions(committeeOptions, committeeNames, selectCommittee));
+                committeeInput.addEventListener('input', () => {
+                    const v = committeeInput.value.trim().toLowerCase();
+                    if (!v) {
+                        showOptions(committeeOptions, committeeNames, selectCommittee);
+                        selectedCommittee = '';
+                        showOptions(subcommitteeOptions, getFilteredSubcommittees(), selectSubcommittee);
+                        filterSeats();
+                        toggleClear();
+                        return;
+                    }
+                    const filteredCommittees = committeeNames.filter(o => o.toLowerCase().includes(v));
+                    showOptions(committeeOptions, filteredCommittees, selectCommittee);
+                    selectedCommittee = filteredCommittees.length === 1 && committeeInput.value.trim().toLowerCase() === filteredCommittees[0].toLowerCase() ? filteredCommittees[0] : '';
+                    showOptions(subcommitteeOptions, getFilteredSubcommittees(), selectSubcommittee);
+                    filterSeats();
+                    toggleClear();
+                });
+                function selectCommittee(item) {
+                    committeeInput.value = item;
+                    committeeOptions.style.display = 'none';
+                    selectedCommittee = item;
+                    showOptions(subcommitteeOptions, getFilteredSubcommittees(), selectSubcommittee);
+                    filterSeats();
+                    toggleClear();
+                }
+                function getFilteredSubcommittees() {
+                    if (!selectedCommittee) return subcommitteeNames.map(s=>s.display);
+                    return subcommitteeNames.filter(s => s.parent === selectedCommittee).map(s=>s.display);
+                }
+                subcommitteeInput.addEventListener('focus', () => {
+                    showOptions(subcommitteeOptions, getFilteredSubcommittees(), selectSubcommittee);
+                });
+                subcommitteeInput.addEventListener('input', () => {
+                    const v = subcommitteeInput.value.trim().toLowerCase();
+                    const filtered = getFilteredSubcommittees().filter(o => o.toLowerCase().includes(v));
+                    showOptions(subcommitteeOptions, filtered, selectSubcommittee);
+                    filterSeats();
+                    toggleClear();
+                });
+                function selectSubcommittee(item) {
+                    subcommitteeInput.value = item;
+                    subcommitteeOptions.style.display = 'none';
+                    filterSeats();
+                    toggleClear();
+                }
+                drawHemicycle(); // Always render chart after data loads
+                updateSummary();
+                toggleClear();
+            }).catch(e => {
+                console.error('Failed to load data:', e);
+                hemicycle.textContent = 'Failed to load data.';
+            });
         }
 
         // Distribute seats evenly per row
@@ -613,11 +774,19 @@
             seatsHighlighted.textContent = "Number of seats highlighted: " + document.querySelectorAll('.seat.highlight').length;
         }
 
+        function normalizeName(name) {
+            return name.replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+
         function filterSeats() {
             const sFilter = stateInput.value.trim().toUpperCase();
             const dFilter = districtInput.value.trim().toLowerCase();
             const pFilter = partyInput.value.trim().toLowerCase();
+            const cFilterRaw = committeeInput.value.trim();
+            const cFilter = normalizeName(cFilterRaw);
             const nFilter = searchInput.value.toLowerCase().trim();
+            const subcFilterRaw = subcommitteeInput.value.trim();
+            const subcFilter = subcFilterRaw.toLowerCase();
 
             const stateMap = Object.fromEntries(Object.entries(ABBR_TO_FULL).map(([k, v]) => [v.toUpperCase(), k]));
             let stFilter = "";
@@ -635,8 +804,25 @@
                 const nMatch = !nFilter || fn.includes(nFilter);
                 const dMatch = !dFilter || md === dFilter;
                 const pMatch = !pFilter || mp === pFilter;
-
-                if (sMatch && nMatch && dMatch && pMatch) {
+                let cMatch = true;
+                if (cFilter && member.committees) {
+                    // Highlight if matches committee or any subcommittee under it
+                    cMatch = member.committees.some(comm => {
+                        const commName = normalizeName(comm.name);
+                        if (!comm.isSubcommittee && commName === cFilter) return true;
+                        if (comm.isSubcommittee && commName.startsWith(cFilter + ' - ')) return true;
+                        if (comm.isSubcommittee && commName === cFilter) return true;
+                        return false;
+                    });
+                }
+                let subcMatch = true;
+                if (subcFilter && member.committees) {
+                    subcMatch = member.committees.some(comm => {
+                        // Match subcommittee by display name
+                        return comm.isSubcommittee && comm.name.toLowerCase().includes(subcFilter);
+                    });
+                }
+                if (sMatch && nMatch && dMatch && pMatch && cMatch && subcMatch) {
                     seat.style.opacity = '1';
                     seat.classList.add('highlight');
                 } else {
@@ -647,7 +833,7 @@
 
             updateHighlightedSeatsCount();
 
-            if (nFilter === '' && !stFilter && !dFilter && !pFilter) return;
+            if (nFilter === '' && !stFilter && !dFilter && !pFilter && !cFilter) return;
 
             let found = false;
             seatEls.forEach(({ seat, member }) => {
