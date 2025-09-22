@@ -403,23 +403,8 @@
                 }
             }
         });
-
-        document.addEventListener('click', (e) => {
-            if (!stateInput.contains(e.target) && !stateOptions.contains(e.target)) {
-                stateOptions.style.display = 'none';
-            }
-            if (!districtInput.contains(e.target) && !districtOptions.contains(e.target)) {
-                districtOptions.style.display = 'none';
-            }
-            if (!partyInput.contains(e.target) && !partyOptions.contains(e.target)) {
-                partyOptions.style.display = 'none';
-            }
-            if (!committeeInput.contains(e.target) && !committeeOptions.contains(e.target)) {
-                committeeOptions.style.display = 'none';
-            }
-            if (!subcommitteeInput.contains(e.target) && !subcommitteeOptions.contains(e.target)) {
-                subcommitteeOptions.style.display = 'none';
-            }
+        stateInput.addEventListener('blur', () => {
+            setTimeout(() => stateOptions.style.display = 'none', 100);
         });
 
         function selectState(item) {
@@ -446,6 +431,9 @@
             filterSeats();
             toggleClear();
         });
+        districtInput.addEventListener('blur', () => {
+            setTimeout(() => districtOptions.style.display = 'none', 100);
+        });
         function selectDistrict(item) {
             districtInput.value = item;
             districtOptions.style.display = 'none';
@@ -466,6 +454,9 @@
             showOptions(partyOptions, ALL_PARTY_OPTIONS.filter(o => o.toLowerCase().startsWith(v)), selectParty);
             filterSeats();
             toggleClear();
+        });
+        partyInput.addEventListener('blur', () => {
+            setTimeout(() => partyOptions.style.display = 'none', 100);
         });
         function selectParty(item) {
             partyInput.value = item;
@@ -488,6 +479,9 @@
             filterSeats();
             toggleClear();
         });
+        committeeInput.addEventListener('blur', () => {
+            setTimeout(() => committeeOptions.style.display = 'none', 100);
+        });
         function selectCommittee(item) {
             committeeInput.value = item;
             committeeOptions.style.display = 'none';
@@ -505,6 +499,9 @@
             showOptions(subcommitteeOptions, filtered, selectSubcommittee);
             filterSeats();
             toggleClear();
+        });
+        subcommitteeInput.addEventListener('blur', () => {
+            setTimeout(() => subcommitteeOptions.style.display = 'none', 100);
         });
         function selectSubcommittee(item) {
             subcommitteeInput.value = item;
