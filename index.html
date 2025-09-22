@@ -283,10 +283,17 @@
   font-family: Arial, sans-serif;
   display: none;
 ">
-    <h3 id="viewer-name" style="margin: 0 0 6px 0;"></h3>
-    <p id="viewer-party" style="margin: 4px 0;"></p>
-    <p id="viewer-state" style="margin: 4px 0;"></p>
-    <button id="viewer-link" style="background-color: #000000;color: white;border: none;padding: 8px 16px;border-radius: 4px;cursor: pointer;font-size: 14px;width:100%;">View Full Details</button>
+  <div style="display: flex; align-items: flex-start;">
+    <div style="flex: 0 0 auto;">
+      <img id="viewer-portrait" src="" alt="Portrait" style="width:80px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #ccc;display:block;">
+    </div>
+    <div style="flex: 1 1 0; margin-left: 18px;">
+      <h3 id="viewer-name" style="margin: 0 0 6px 0;"></h3>
+      <p id="viewer-party" style="margin: 4px 0;"></p>
+      <p id="viewer-state" style="margin: 4px 0;"></p>
+      <button id="viewer-link" style="background-color: #000000;color: white;border: none;padding: 8px 16px;border-radius: 4px;cursor: pointer;font-size: 14px;width:100%;">View Full Details</button>
+    </div>
+  </div>
 </div>
 
 <div>
@@ -737,6 +744,7 @@
             viewerState.textContent = `State: ${stateName} District: ${t.district || 'At Large'}`;
             const url = t.district && t.district !== 0 ? `house.html?${t.state}-${t.district}` : `house.html?${t.state}`;
             viewerLink.onclick = () => window.location.href = url;
+            document.getElementById('viewer-portrait').src = `https://clerk.house.gov/images/members/${m.id.bioguide}.jpg`;
             if (t.party.toLowerCase() === 'democrat') {
                 viewerCard.style.backgroundColor = '#004c8f';
                 viewerCard.style.color = 'white';
