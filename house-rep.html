@@ -5,13 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Legislator Info with Committee Roles</title>
     <style>
-        body { margin: 0px 120px; font-size: 18px; }
+        body { font-size: 18px; }
         .info { display: inline-block; vertical-align: top; }
         #menu ul { list-style-type: none; margin: 10px 0px; padding: 0; display: flex; }
         #menu ul li a { display: inline-block; color: black; background-color: white; padding:8px 16px; border-radius: 50px; margin: 0px 3px; text-decoration: none; }
         #links ul { list-style-type: none; margin: 10px 0px; padding: 0; display: flex; background-color: #d3d3d3; border-radius: 25px; padding: 10px; }
         #links ul li a { color: black; text-decoration: none; margin: 0px 10px; }
         #links ul li a:hover { color: white; }
+
+        @media only screen and (max-width: 820px) {
+            body { margin: 0px 10px; }
+        }@media only screen and (min-width: 820px){
+            body { margin: 0px 120px; }
+        }
     </style>
 </head>
 <body>
@@ -111,7 +117,7 @@
         if(!dateStr) return "N/A";
         const d=new Date(dateStr);
         if(isNaN(d)) return "N/A";
-        return `${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`;
+        return d.getFullYear();
     }
     function calculateCountdown(endDateStr){
         if(!endDateStr) return "N/A";
