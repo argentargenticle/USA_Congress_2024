@@ -89,7 +89,49 @@
         #filter label {
             padding: 10px 0px;
         }
-        @media only screen and (max-width: 600px) {
+        @media only screen and (max-width: 400px) {
+            #main {
+                display: block;
+            }
+            .hemicycle {
+                position: relative;
+                height: 250px;
+                width: 100vw;
+                max-width: 375px;
+                margin-bottom: 20px;
+                /* Add padding left and right to avoid clipping*/
+                padding-left: 25px;
+                padding-right: 25px;
+                left:50px;
+                box-sizing: border-box;
+            }
+            .seat {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                border: 2px solid white;
+                box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+                transform: translate(-50%, -50%);
+                cursor: pointer;
+                transition: opacity 0.3s;
+            }
+            body {
+                flex-direction: column;
+                align-items: center;
+                height: 100vh;
+                background: #f0f0f0;
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            #search-input, .input-wrapper, #clear-search{
+                width: 100%;
+                display: block;
+                margin:10px 0px;
+            }
+        }@media only screen and (min-width: 400px) and (max-width: 600px) {
             #main {
                 display: block;
             }
@@ -269,6 +311,7 @@
     </div>
     <button id="clear-search">Clear/Reset All Filters</button>
 </div>
+
 <div id="main">
     <div id="filter">
         <label for="state-select">Select or type a state:</label><br />
@@ -309,35 +352,36 @@
         <div id="seatsHighlighted" style="text-align: center;vertical-align: bottom;padding: 10px;">Loading...</div>
     </div>
     <div id="chart">
+        <!-- Add this div below your chart div -->
+        <div id="viewer-card" style="
+          border: 1px solid #ccc;
+          background: white;
+          padding: 12px;
+          margin-top: 20px;
+          margin-left: auto;
+          margin-right: auto;
+          max-width: 300px;
+          box-shadow: 0 0 8px rgba(0,0,0,0.15);
+          font-family: Arial, sans-serif;
+          display: none;
+        ">
+            <div style="display: flex; align-items: flex-start;">
+                <div style="flex: 0 0 auto;">
+                    <img id="viewer-portrait" src="" alt="Portrait" style="width:80px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #ccc;display:block;">
+                </div>
+                <div style="flex: 1 1 0; margin-left: 18px;">
+                    <h3 id="viewer-name" style="margin: 0 0 6px 0;"></h3>
+                    <p id="viewer-party" style="margin: 4px 0;"></p>
+                    <p id="viewer-state" style="margin: 4px 0;"></p>
+                    <button id="viewer-link" style="background-color: #000000;color: white;border: none;padding: 8px 16px;border-radius: 4px;cursor: pointer;font-size: 14px;width:100%;">View Full Details</button>
+                </div>
+            </div>
+        </div>
         <div class="hemicycle" id="hemicycle" style="margin: 0 auto;"></div>
-        <div class="tooltip" id="tooltip"></div>
-        <br />
+        <br>
         <div class="summary" id="summary"></div>
         <div class="simpleMar" id="simpleMar"></div>
     </div>
-</div>
-<!-- Add this div below your chart div -->
-<div id="viewer-card" style="
-  border: 1px solid #ccc;
-  background: white;
-  padding: 12px;
-  margin-top: 20px;
-  max-width: 700px;
-  box-shadow: 0 0 8px rgba(0,0,0,0.15);
-  font-family: Arial, sans-serif;
-  display: none;
-">
-  <div style="display: flex; align-items: flex-start;">
-    <div style="flex: 0 0 auto;">
-      <img id="viewer-portrait" src="" alt="Portrait" style="width:80px;height:100px;object-fit:cover;border-radius:8px;border:1px solid #ccc;display:block;">
-    </div>
-    <div style="flex: 1 1 0; margin-left: 18px;">
-      <h3 id="viewer-name" style="margin: 0 0 6px 0;"></h3>
-      <p id="viewer-party" style="margin: 4px 0;"></p>
-      <p id="viewer-state" style="margin: 4px 0;"></p>
-      <button id="viewer-link" style="background-color: #000000;color: white;border: none;padding: 8px 16px;border-radius: 4px;cursor: pointer;font-size: 14px;width:100%;">View Full Details</button>
-    </div>
-  </div>
 </div>
 
 <div>
