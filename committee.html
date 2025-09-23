@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U.S. Congress - Committees</title>
+    <link rel="stylesheet" href="css/nav.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 1200px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .committee {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #3498db;
+        }
+        .subcommittee {
+            margin: 10px 0 10px 30px;
+            padding: 10px;
+            background: white;
+            border-left: 3px solid #95a5a6;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="house.html">House</a></li>
+        </ul>
+    </nav>
+    <h1>U.S. Congress Committees</h1>
+<div id="loading" class="loading">Loading committees data...</div>
+<div id="committees-container"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('committees-container');
+        const loading = document.getElementById('loading');
+
+        fetch('https://unitedstates.github.io/congress-legislators/committees-current.json')
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+                displayCommittees(data);
+            })
+            .catch(error => {
+                loading.textContent = 'Error loading committees. Please try again later.';
+            });
+
+        function displayCommittees(committees) {
+            // Group by committee name
+            const grouped = {};
+
+            // First pass: find all main committees
+            committees.forEach(committee => {
+                if (!committee.subcommittee) {
+                    const chamber = committee.type === 'house' ? 'House' : 
+                                  committee.type === 'senate' ? 'Senate' : 'Joint';
+                    const displayName = `${committee.name} (${chamber})`;
+                    if (!grouped[displayName]) {
+                        grouped[displayName] = {
+                            main: committee,
+                            subcommittees: []
+                        };
+                    }
+                }
+            });
+
+            // Second pass: assign subcommittees
+            committees.forEach(committee => {
+                if (committee.subcommittee) {
+                    const parentChamber = committee.type === 'house' ? 'House' : 
+                                       committee.type === 'senate' ? 'Senate' : 'Joint';
+                    const parentKey = `${committee.parent_committee_name} (${parentChamber})`;
+                    if (grouped[parentKey]) {
+                        grouped[parentKey].subcommittees.push(committee);
+                    }
+                }
+            });
+
+            // Generate HTML
+            let html = '';
+            Object.entries(grouped).forEach(([displayName, {main, subcommittees}]) => {
+                html += `
+                        <div class="committee">
+                            <h2>${displayName}</h2>
+                            ${main.phone ? `<p><strong>Phone:</strong> ${main.phone}</p>` : ''}
+                            ${main.office ? `<p><strong>Office:</strong> ${main.office}</p>` : ''}`;
+
+                if (subcommittees.length > 0) {
+                    html += '<h3>Subcommittees:</h3>';
+                    subcommittees.forEach(sub => {
+                        html += `
+                                <div class="subcommittee">
+                                    <h4>${sub.name}</h4>
+                                    ${sub.phone ? `<p><strong>Phone:</strong> ${sub.phone}</p>` : ''}
+                                    ${sub.office ? `<p><strong>Office:</strong> ${sub.office}</p>` : ''}
+                                </div>`;
+                    });
+                }
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+        }
+    });
+</script>
+</body>
+</html>
