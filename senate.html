@@ -329,7 +329,7 @@
             <span class="clear-x" id="clear-subcommittee-input">×</span>
         </div>
         <div id="subcommittee-options"></div>
-        <div id="seatsHighlighted" style="text-align: center;vertical-align: bottom;padding: 10px;">Loading...</div>
+        <div id="seatsHighlighted" style="text-align: center;vertical-align: bottom;padding: 10px;">Please filter or search to see count number of seats highlighted</div>
     </div>
     <div id="chart">
         <!-- Add this div below your chart div -->
@@ -770,9 +770,37 @@
             const demStart = (Math.PI + gap) * 0.5;
             const demEnd = Math.PI;
 
-            // Filter members by party (only show Dems and Reps)
-            const reps = members.filter(m => m.terms[m.terms.length - 1].party === 'Republican');
-            const dems = members.filter(m => m.terms[m.terms.length - 1].party === 'Democrat');
+            // Filter members by party and handle caucusing
+            const reps = [];
+            const dems = [];
+            const others = [];
+            
+            members.forEach(member => {
+                const term = member.terms[member.terms.length - 1];
+                
+                if (term.party === 'Republican' || 
+                    (term.party === 'Independent' && term.caucus === 'Republican')) {
+                    reps.push(member);
+                } 
+                else if (term.party === 'Democrat' || 
+                        (term.party === 'Independent' && 
+                         (term.caucus === 'Democrat' || !term.caucus))) {
+                    // Default Independents to Democrat side if no caucus specified
+                    dems.push(member);
+                } else {
+                    // Any other cases go to others
+                    others.push(member);
+                }
+            });
+            
+            // Log any members that didn't fit the main categories
+            if (others.length > 0) {
+                console.log('Members not in main parties:', others.map(m => ({
+                    name: `${m.name.first} ${m.name.last}`,
+                    party: m.terms[m.terms.length - 1].party,
+                    caucus: m.terms[m.terms.length - 1].caucus
+                })));
+            }
 
             // Distribute seats for each party
             const repSeats = distributeSeats(reps.length);
@@ -868,14 +896,39 @@
         });
 
         function updateSummary() {
-            let dc = 0, rc = 0;
+            let dc = 0, rc = 0, id = 0, ir = 0; // dc: democrats, rc: republicans, id: independents with dems, ir: independents with reps
             members.forEach(m => {
-                const p = m.terms[m.terms.length - 1].party;
-                if (p === 'Democrat') dc++;
-                else if (p === 'Republican') rc++;
+                const term = m.terms[m.terms.length - 1];
+                if (term.party === 'Democrat') {
+                    dc++;
+                } else if (term.party === 'Republican') {
+                    rc++;
+                } else if (term.party === 'Independent') {
+                    if (term.caucus === 'Republican') {
+                        ir++;
+                    } else {
+                        // Default to caucusing with Democrats if not specified
+                        id++;
+                    }
+                }
             });
-            const filled = dc + rc, vac = 100 - filled;
-            summary.innerHTML = `Republicans: ${rc} — Democrats: ${dc} — Vacant: ${vac}` +
+            const filled = dc + rc + id + ir, vac = 100 - filled;
+            
+            // Format party counts with their respective independents
+            const repTotal = rc + ir;
+            const demTotal = dc + id;
+            
+            let repText = repTotal.toString();
+            let demText = demTotal.toString();
+            
+            // Add independent counts in parentheses if they exist
+            if (ir > 0) {
+                repText = `${repTotal} (Rep:${rc} | Ind:${ir})`;
+            }
+            if (id > 0) {
+                demText = `${demTotal} (Dem:${dc} | Ind:${id})`;
+            }
+            summary.innerHTML = `Republicans: ${rc} — Democrats: ${demText} — Vacant: ${vac}` +
                 (vac > 0 ? ' — <a href="https://ballotpedia.org/Special_elections_to_the_119th_United_States_Congress_(2025-2026)" target="_blank">See upcoming special elections</a>' : '');
             simpleMar.innerText = `Simple Majority (of ${filled} filled seats): ${Math.floor(filled / 2) + 1}`;
         }
