@@ -40,8 +40,10 @@
     <nav>
         <ul>
             <li><a href="index.html">Home</a></li>
-            <li><a href="faq.html">FAQ</a></li>
             <li><a href="house.html">House</a></li>
+            <li><a href="senate.html">Senate</a></li>
+            <li><a href="committee.html" class="active">Committees</a></li>
+            <li><a href="faq.html">FAQ</a></li>
         </ul>
     </nav>
     <h1>U.S. Congress Committees</h1>
@@ -97,18 +99,22 @@
             // Generate HTML
             let html = '';
             Object.entries(grouped).forEach(([displayName, {main, subcommittees}]) => {
+                const committeeUrl = `committee-individual.html?thomas_id=${main.thomas_id}`;
                 html += `
                         <div class="committee">
-                            <h2>${displayName}</h2>
+                            <h2><a href="${committeeUrl}">${displayName}</a></h2>
                             ${main.phone ? `<p><strong>Phone:</strong> ${main.phone}</p>` : ''}
-                            ${main.office ? `<p><strong>Office:</strong> ${main.office}</p>` : ''}`;
+                            ${main.office ? `<p><strong>Office:</strong> ${main.office}</p>` : ''}
+                            ${main.url ? `<p><a href="${main.url}" target="_blank">Committee Website</a></p>` : ''}`;
 
                 if (subcommittees.length > 0) {
                     html += '<h3>Subcommittees:</h3>';
                     subcommittees.forEach(sub => {
+                        const subId = main.thomas_id + sub.thomas_id;
+                        const subUrl = `committee-individual.html?thomas_id=${main.thomas_id}&sub=${sub.thomas_id}`;
                         html += `
                                 <div class="subcommittee">
-                                    <h4>${sub.name}</h4>
+                                    <h4><a href="${subUrl}">${sub.name}</a></h4>
                                     ${sub.phone ? `<p><strong>Phone:</strong> ${sub.phone}</p>` : ''}
                                     ${sub.office ? `<p><strong>Office:</strong> ${sub.office}</p>` : ''}
                                 </div>`;

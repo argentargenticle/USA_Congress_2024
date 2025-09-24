@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Committee Details - USA Congress</title>
+    <link rel="stylesheet" href="css/nav.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0 auto;
+            padding: 20px;
+            max-width: 1200px;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .committee-header {
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .committee-details {
+            margin-bottom: 30px;
+        }
+        .committee-website a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .committee-website a:hover {
+            text-decoration: underline;
+        }
+        .member-list {
+            margin-top: 20px;
+        }
+        .role-category {
+            margin-bottom: 30px;
+            break-inside: avoid;
+        }
+        .role-category h2 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .member-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        .member-image {
+            width: auto;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .member-info {
+            flex: 1;
+        }
+        .majority {
+            border-left: 4px solid #ff4d4d;
+        }
+        .minority {
+            border-left: 4px solid #4d79ff;
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation Menu -->
+<nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="house.html">House</a></li>
+        <li><a href="senate.html">Senate</a></li>
+        <li><a href="committee.html" class="active">Committees</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+    </ul>
+</nav>
+
+<div class="container">
+    <div id="loading" class="loading">Loading committee information...</div>
+    <div id="committee-details" style="display: none;">
+        <h1 id="committee-name" class="committee-header">Committee Name</h1>
+        <div id="members-list" class="member-list">
+            <!-- Members will be added here by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the thomas_id from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const thomasId = urlParams.get('thomas_id');
+
+        if (!thomasId) {
+            document.getElementById('loading').textContent = 'No committee ID provided.';
+            return;
+        }
+
+        // Fetch committee membership, details, and legislators data in parallel
+        Promise.all([
+            fetch('https://unitedstates.github.io/congress-legislators/committee-membership-current.json').then(r => r.json()),
+            fetch('https://unitedstates.github.io/congress-legislators/committees-current.json').then(r => r.json()),
+            fetch('https://unitedstates.github.io/congress-legislators/legislators-current.json').then(r => r.json())
+        ])
+            .then(([membershipData, committeesData, legislatorsData]) => {
+                const committeeData = membershipData[thomasId];
+                if (!committeeData) {
+                    throw new Error('Committee not found');
+                }
+
+                // Find the committee details from the committees data
+                const committeeDetails = committeesData.find(c => c.thomas_id === thomasId);
+                const committeeName = committeeDetails ? committeeDetails.name : 'Committee Details';
+                const committeeJurisdiction = committeeDetails ? committeeDetails.jurisdiction : '';
+                const committeeUrl = committeeDetails ? committeeDetails.url : '';
+                const committeePhone = committeeDetails ? committeeDetails.phone : '';
+                const committeeAddress = committeeDetails ? committeeDetails.address : '';
+                const subcommittees = committeeDetails ? committeeDetails.subcommittees || [] : [];
+
+                // Update the page title and header
+                document.title = committeeName + ' - USA Congress';
+                const committeeNameEl = document.getElementById('committee-name');
+                committeeNameEl.innerHTML = committeeName;
+
+                // Create details list
+                const detailsList = document.createElement('ul');
+                detailsList.className = 'committee-website';
+
+                if (committeeUrl) {
+                    const urlItem = document.createElement('li');
+                    urlItem.innerHTML = `<a href="${committeeUrl}" target="_blank">${committeeUrl}</a>`;
+                    detailsList.appendChild(urlItem);
+                }
+
+                if (committeeAddress) {
+                    const addressItem = document.createElement('li');
+                    addressItem.className = 'committee-address';
+                    addressItem.textContent = committeeAddress;
+                    detailsList.appendChild(addressItem);
+                }
+
+                if (committeePhone) {
+                    const phoneItem = document.createElement('li');
+                    phoneItem.className = 'committee-phone';
+                    phoneItem.textContent = committeePhone;
+                    detailsList.appendChild(phoneItem);
+                }
+
+                if (committeeJurisdiction) {
+                    const jurisdictionItem = document.createElement('li');
+                    jurisdictionItem.className = 'committee-jurisdiction';
+                    jurisdictionItem.textContent = committeeJurisdiction;
+                    detailsList.appendChild(jurisdictionItem);
+                }
+
+                // Insert the details list after the committee name
+                committeeNameEl.parentNode.insertBefore(detailsList, committeeNameEl.nextSibling);
+
+                // State abbreviation to full name mapping
+                const stateAbbrToName = {
+                    'AL': 'Alabama', 'AK': 'Alaska', 'AZ': 'Arizona', 'AR': 'Arkansas', 'CA': 'California',
+                    'CO': 'Colorado', 'CT': 'Connecticut', 'DE': 'Delaware', 'FL': 'Florida', 'GA': 'Georgia',
+                    'HI': 'Hawaii', 'ID': 'Idaho', 'IL': 'Illinois', 'IN': 'Indiana', 'IA': 'Iowa',
+                    'KS': 'Kansas', 'KY': 'Kentucky', 'LA': 'Louisiana', 'ME': 'Maine', 'MD': 'Maryland',
+                    'MA': 'Massachusetts', 'MI': 'Michigan', 'MN': 'Minnesota', 'MS': 'Mississippi', 'MO': 'Missouri',
+                    'MT': 'Montana', 'NE': 'Nebraska', 'NV': 'Nevada', 'NH': 'New Hampshire', 'NJ': 'New Jersey',
+                    'NM': 'New Mexico', 'NY': 'New York', 'NC': 'North Carolina', 'ND': 'North Dakota', 'OH': 'Ohio',
+                    'OK': 'Oklahoma', 'OR': 'Oregon', 'PA': 'Pennsylvania', 'RI': 'Rhode Island', 'SC': 'South Carolina',
+                    'SD': 'South Dakota', 'TN': 'Tennessee', 'TX': 'Texas', 'UT': 'Utah', 'VT': 'Vermont',
+                    'VA': 'Virginia', 'WA': 'Washington', 'WV': 'West Virginia', 'WI': 'Wisconsin', 'WY': 'Wyoming',
+                    'DC': 'District of Columbia', 'PR': 'Puerto Rico', 'GU': 'Guam', 'AS': 'American Samoa',
+                    'VI': 'U.S. Virgin Islands', 'MP': 'Northern Mariana Islands'
+                };
+
+                // Create maps for member information
+                const bioguideToState = {};
+                const bioguideToType = {}; // Track if member is a Senator or Representative
+
+                // Process legislators data to create mappings
+                legislatorsData.forEach(legislator => {
+                    if (legislator.id?.bioguide && legislator.terms?.length > 0) {
+                        const latestTerm = legislator.terms[legislator.terms.length - 1];
+                        bioguideToState[legislator.id.bioguide] = latestTerm.state;
+                        bioguideToType[legislator.id.bioguide] = latestTerm.type; // 'rep' or 'sen'
+                    }
+                });
+                legislatorsData.forEach(legislator => {
+                    if (legislator.id?.bioguide && legislator.terms?.length > 0) {
+                        // Get the most recent term
+                        const latestTerm = legislator.terms[legislator.terms.length - 1];
+                        bioguideToState[legislator.id.bioguide] = latestTerm.state;
+                    }
+                });
+
+                // Categorize members by role
+                const membersByRole = {
+                    chair: [],
+                    viceChair: [],
+                    rankingMember: [],
+                    members: []
+                };
+
+                committeeData.forEach(member => {
+                    const role = (member.title || '').toLowerCase();
+                    if (role.includes('chair') && !role.includes('vice') && !role.includes('ranking')) {
+                        membersByRole.chair.push(member);
+                    } else if (role.includes('vice chair') || role.includes('vice-chair')) {
+                        membersByRole.viceChair.push(member);
+                    } else if (role.includes('ranking')) {
+                        membersByRole.rankingMember.push(member);
+                    } else {
+                        membersByRole.members.push(member);
+                    }
+                });
+
+                // Sort members by rank within each category
+                Object.values(membersByRole).forEach(group => {
+                    group.sort((a, b) => a.rank - b.rank);
+                });
+
+                // Display members by category
+                const membersList = document.getElementById('members-list');
+
+                // Display Chair
+                if (membersByRole.chair.length > 0) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'role-category';
+
+                    const categoryHeader = document.createElement('h2');
+                    categoryHeader.textContent = 'Chair';
+                    categoryDiv.appendChild(categoryHeader);
+
+                    const membersGrid = document.createElement('div');
+                    membersGrid.className = 'members-grid';
+
+                    membersByRole.chair.forEach(member => {
+                        membersGrid.appendChild(createMemberCard(member));
+                    });
+
+                    categoryDiv.appendChild(membersGrid);
+                    membersList.appendChild(categoryDiv);
+                }
+
+                // Display Vice Chairs
+                if (membersByRole.viceChair.length > 0) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'role-category';
+
+                    const categoryHeader = document.createElement('h2');
+                    categoryHeader.textContent = 'Vice Chairs';
+                    categoryDiv.appendChild(categoryHeader);
+
+                    const membersGrid = document.createElement('div');
+                    membersGrid.className = 'members-grid';
+
+                    membersByRole.viceChair.forEach(member => {
+                        membersGrid.appendChild(createMemberCard(member));
+                    });
+
+                    categoryDiv.appendChild(membersGrid);
+                    membersList.appendChild(categoryDiv);
+                }
+
+                // Display Ranking Member
+                if (membersByRole.rankingMember.length > 0) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'role-category';
+
+                    const categoryHeader = document.createElement('h2');
+                    categoryHeader.textContent = 'Ranking Member';
+                    categoryDiv.appendChild(categoryHeader);
+
+                    const membersGrid = document.createElement('div');
+                    membersGrid.className = 'members-grid';
+
+                    membersByRole.rankingMember.forEach(member => {
+                        membersGrid.appendChild(createMemberCard(member));
+                    });
+
+                    categoryDiv.appendChild(membersGrid);
+                    membersList.appendChild(categoryDiv);
+                }
+
+                // Display Regular Members
+                if (membersByRole.members.length > 0) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'role-category';
+
+                    const categoryHeader = document.createElement('h2');
+                    categoryHeader.textContent = 'Members';
+                    categoryDiv.appendChild(categoryHeader);
+
+                    const membersGrid = document.createElement('div');
+                    membersGrid.className = 'members-grid';
+
+                    // Sort regular members by party (majority first) and then by rank
+                    membersByRole.members.sort((a, b) => {
+                        if (a.party === b.party) {
+                            return a.rank - b.rank;
+                        }
+                        return a.party === 'majority' ? -1 : 1;
+                    });
+
+                    membersByRole.members.forEach(member => {
+                        membersGrid.appendChild(createMemberCard(member));
+                    });
+
+                    categoryDiv.appendChild(membersGrid);
+                    membersList.appendChild(categoryDiv);
+                }
+
+                // Helper function to create member card
+                function createMemberCard(member) {
+                    const memberCard = document.createElement('div');
+                    memberCard.className = `member-card ${member.party}`;
+                    const role = member.title && !member.title.toLowerCase().includes('member') ? member.title : 'Member';
+
+                    // Determine image source based on member type
+                    let imageUrl = 'https://clerk.house.gov/images/members/placeholder.jpg';
+                    let fallbackImageUrl = null;
+                    
+                    if (member.bioguide) {
+                        const memberType = bioguideToType[member.bioguide];
+                        if (memberType === 'sen') {
+                            // For Senators, first try GitHub, then fall back to vote-usa.org
+                            imageUrl = `https://raw.githubusercontent.com/unitedstates/images/refs/heads/gh-pages/congress/450x550/${member.bioguide}.jpg`;
+                            
+                            // Prepare fallback URL in case GitHub image fails
+                            const state = bioguideToState[member.bioguide] || '';
+                            const nameParts = member.name.split(' ').filter(part => part.length > 0);
+                            const lastName = nameParts[nameParts.length - 1];
+                            const firstName = nameParts[0];
+                            const imageName = `${state}${lastName}${firstName}`.replace(/[^a-z0-9]/gi, '');
+                            fallbackImageUrl = `https://vote-usa.org/Image.aspx?Id=${imageName}&Col=Profile300&Def=Profile300`;
+                        } else {
+                            // Use Clerk of the House for Representatives
+                            imageUrl = `https://clerk.house.gov/images/members/${member.bioguide}.jpg`;
+                        }
+                    }
+
+                    const stateAbbr = member.bioguide ? bioguideToState[member.bioguide] : '';
+                    const stateFullName = stateAbbr ? stateAbbrToName[stateAbbr] || stateAbbr : '';
+
+                    memberCard.innerHTML = `
+                <img src="${imageUrl}" alt="${member.name}" class="member-image" onerror="${fallbackImageUrl ? `this.onerror=null; this.src='${fallbackImageUrl}'; this.onerror=function(){this.src='https://clerk.house.gov/images/members/placeholder.jpg';}` : `this.onerror=null; this.src='https://clerk.house.gov/images/members/placeholder.jpg';`}">
+                <div class="member-info">
+                    <h3>${member.name}</h3>
+                    <p><strong>Role:</strong> ${role}</p>
+                    <p><strong>Party:</strong> ${member.party === 'majority' ? 'Majority' : 'Minority'}</p>
+                    ${stateFullName ? `<p><strong>State:</strong> ${stateFullName}</p>` : ''}
+                    <p><strong>Rank:</strong> ${member.rank}</p>
+                </div>
+            `;
+                    return memberCard;
+                }
+
+                // Hide loading, show content after all members are added
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('committee-details').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').textContent = 'Failed to load committee information. ' + error.message;
+            });
+    });
+</script>
+</body>
+</html>

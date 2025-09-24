@@ -23,7 +23,7 @@
 <body>
 <div id="menu">
     <ul>
-        <li><a href="house.html">Full USA Congressional House</a></li>
+        <li id="backLink"><a href="#">Back</a></li>
     </ul>
 </div>
 <div style="display:inline-block;">
@@ -203,22 +203,26 @@
         return `<a href="https://www.trackaipac.com/states/${stateLower}?rq=${encodedName}" target="_blank">Track AIPAC</a>`;
     }
 
-    // Extract query params
-    const query = window.location.search.slice(1);
-    let stateAbbr="N/A", districtNum="N/A";
-
-    if(query){
-        if(query.includes("-")){ // STATE-DISTRICT format
-            const [abbr,district] = query.split("-");
-            stateAbbr = abbr.toUpperCase();
-            districtNum = district;
-        } else {
-            stateAbbr = query.toUpperCase();
-            districtNum = "AUTO"; // we'll resolve it later
-        }
+    // Extract bioguide ID and source from query params
+    const queryString = window.location.search.slice(1);
+    const [bioguideId, sourceParam] = queryString.split('?');
+    const source = sourceParam ? sourceParam.split('=')[1] : 'house'; // Default to house if no source specified
+    
+    // Set the back link based on source
+    const backLink = document.getElementById('backLink');
+    if (source === 'senate') {
+        backLink.innerHTML = '<a href="senate.html">Full USA Congressional Senate</a>';
+    } else {
+        backLink.innerHTML = '<a href="house.html">Full USA Congressional House</a>';
     }
-    document.getElementById("stateFullName").textContent = stateNames[stateAbbr]||"Unknown";
-    document.getElementById("districtNum").textContent = districtNum;
+    
+    // Initialize variables
+    let stateAbbr = "N/A";
+    let districtNum = "N/A";
+    
+    // These will be set after we find the legislator
+    let currentState = "";
+    let currentDistrict = "";
 
     Promise.all([
         fetch("https://unitedstates.github.io/congress-legislators/legislators-current.json").then(r=>r.json()),
@@ -227,15 +231,20 @@
     ]).then(([legislatorsData, membershipData, committeesData])=>{
         const today=new Date();
 
-        // Find legislator
-        let legislator = legislatorsData.find(leg=>{
-            if(!leg.terms||!leg.terms.length) return false;
-            const term=leg.terms[leg.terms.length-1];
-            if(term.type!=="rep" || new Date(term.end)<=today) return false;
-            if(term.state!==stateAbbr || !votingStates.has(term.state)) return false;
-            if(districtNum==="AUTO"){ return true; } // pick any
-            return String(term.district)===String(districtNum);
-        });
+        // Find legislator by bioguide ID
+        let legislator = legislatorsData.find(leg => leg.id.bioguide === bioguideId);
+        
+        if (legislator) {
+            const term = legislator.terms[legislator.terms.length-1];
+            stateAbbr = term.state;
+            districtNum = term.district ? term.district.toString() : "N/A";
+            currentState = stateNames[stateAbbr] || "Unknown";
+            currentDistrict = districtNum;
+            
+            // Update the UI with state and district info
+            document.getElementById("stateFullName").textContent = currentState;
+            document.getElementById("districtNum").textContent = currentDistrict;
+        }
 
         if(!legislator){
             document.getElementById("officialFullName").textContent="No current representative found";
@@ -283,8 +292,14 @@
 
         document.body.style.backgroundColor = t.party==="Republican"?"#ffcccc":t.party==="Democrat"?"#cce5ff":"";
 
-        document.getElementById("portraitImg").src=`https://clerk.house.gov/images/members/${legislator.id.bioguide}.jpg`;
-        document.getElementById("portraitImg").alt=`Portrait of ${officialName}`;
+        // Set portrait image source based on source parameter
+        const portraitImg = document.getElementById("portraitImg");
+        if (source === 'senate') {
+            portraitImg.src = `https://raw.githubusercontent.com/argentargenticle/USA_Senate_Images/refs/heads/main/${legislator.id.bioguide}.jpg`;
+        } else {
+            portraitImg.src = `https://clerk.house.gov/images/members/${legislator.id.bioguide}.jpg`;
+        }
+        portraitImg.alt = `Portrait of ${officialName}`;
 
         // Committees
         const bioguide = legislator.id.bioguide;

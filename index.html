@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USA Congress Directory</title>
+    <link rel="stylesheet" href="css/nav.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,18 +13,37 @@
             padding: 20px;
             max-width: 1200px;
         }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
+    <nav>
+        <ul>
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="house.html">House</a></li>
+            <li><a href="senate.html">Senate</a></li>
+            <li><a href="committee.html">Committees</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+        </ul>
+    </nav>
+    
     <h1>USA Congress Directory</h1>
-    <p>
-        Welcome to the USA Congress Directory. This website provides easy access to information about the current members of the United States House of Representatives. Use the link below to view a complete list of all House Representatives, including their names, states, and other relevant details.
-    </p>
-    <ul>
-        <li><a href="house.html">View All House Representatives</a></li>
-        <li><a href="faq.html">Frequently Asked Questions of Government</a></li>
-        <li><a href="committee.html">Committees</a></li>
-    </ul>
+    <div class="content">
+        <p>
+            Welcome to the USA Congress Directory. This website provides easy access to information about the current members of the United States Congress. Use the links below to explore the House of Representatives, Senate, and Committees.
+        </p>
+        <ul>
+            <li><a href="house.html">House of Representatives</a></li>
+            <li><a href="senate.html">Senate</a></li>
+            <li><a href="committee.html">Committees</a></li>
+            <li><a href="faq.html">Frequently Asked Questions</a></li>
+        </ul>
+    </div>
 </body>
 </html>
 

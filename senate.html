@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hemicycle US House Members 2025 - Fixed Seat Overlap</title>
+    <title>Hemicycle US Senate Members 2025 - Fixed Seat Overlap</title>
     <link rel="stylesheet" href="css/nav.css">
     <style>
         /* Original styles unchanged except padding added for small screens*/
@@ -17,7 +17,7 @@
             width: 300px;
         }
         #search-input,
-        #state-select, #district-select, #party-select, #committee-select, #subcommittee-select {
+        #state-select, #party-select, #committee-select, #subcommittee-select {
             font-size: 14px;
             margin: 0;
             padding: 6px 28px 6px 8px;
@@ -89,7 +89,7 @@
         #header {
             margin: 10px 0px 0px 0px;
         }
-        #state-options, #district-options, #party-options, #committee-options, #subcommittee-options {
+        #state-options, #party-options, #committee-options, #subcommittee-options {
             width: 99%;
             left: 0;
             right: 0;
@@ -284,16 +284,15 @@
     </style>
 </head>
 <body>
-    <nav>
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="house.html" class="active">House</a></li>
-            <li><a href="senate.html">Senate</a></li>
-            <li><a href="committee.html">Committees</a></li>
-            <li><a href="faq.html">FAQ</a></li>
-        </ul>
-    </nav>
-    <h1 id="header">USA Congress - House 2025 - 119th Congress</h1>
+<nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="house.html" class="active">House</a></li>
+        <li><a href="committee.html">Committees</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+    </ul>
+</nav>
+<h1 id="header">USA Congress - Senate 2025 - 119th Congress</h1>
 <div id="search-container">
     <div class="input-wrapper">
         <input type="text" id="search-input" placeholder="Search representative by name..." />
@@ -310,15 +309,6 @@
             <span class="clear-x" id="clear-state-input">×</span>
         </div>
         <div id="state-options"></div>
-        <!-- New district filter added here -->
-        <br />
-        <label for="district-select">Select or type a district:</label><br />
-        <div class="input-wrapper" style="width:100%;">
-            <input type="text" id="district-select" placeholder="Type 1-52 or At Large" autocomplete="off" />
-            <span class="clear-x" id="clear-district-input">×</span>
-        </div>
-        <div id="district-options"></div>
-        <!-- New district filter added here -->
         <br />
         <label for="party-select">Select or type a party:</label><br />
         <div class="input-wrapper" style="width:100%;">
@@ -377,11 +367,10 @@
 <div>
     <h2>How to use?</h2>
     <ul>
-        <li>Enter the name of the person who represents your area in Congress.</li>
+        <li>Enter the name of the person who represents your state in the Senate.</li>
         <li>Or pick or type the name of your state on the left side (if you're on a computer) or at the top of the chart (if you're on a phone). You can also just type the state's abbreviation.</li>
-        <li>Or pick or type the name of your district on the left side (if you're on a computer) or at the top of the chart (if you're on a phone).</li>
-        <li>Doing one of these things will make all the other names fade out and highlight only your chosen representative(s.</li>
-        <li>Click or tap on the seat or dot to get viewer card which appear stats of chart</li>
+        <li>Doing one of these things will make all the other names fade out and highlight only your chosen senator(s).</li>
+        <li>Click or tap on the seat or dot to get viewer card which appears with stats of the senator</li>
         <li>Click or tap "View Full Details" in the viewer card</li>
     </ul>
     <h2>Explain looks</h2>
@@ -396,7 +385,6 @@
     const ABBR_TO_FULL = {AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming"};
     const STATE_FULL_NAMES = {...ABBR_TO_FULL, DC:"District of Columbia"};
     const VOTING_STATES = new Set(Object.keys(ABBR_TO_FULL));
-    const ALL_DISTRICTS = Array.from({length:52},(_,i) => (i+1).toString()).concat(['At Large']);
     const ALL_PARTY_OPTIONS = ["Democrat", "Republican"];
 
     // Wait DOM and perform main logic
@@ -404,14 +392,11 @@
         // Cached element refs
         const stateInput = document.getElementById('state-select');
         const stateOptions = document.getElementById('state-options');
-        const districtInput = document.getElementById('district-select');
-        const districtOptions = document.getElementById('district-options');
         const partyInput = document.getElementById('party-select');
         const partyOptions = document.getElementById('party-options');
         const searchInput = document.getElementById('search-input');
         const clearSearchX = document.getElementById('clear-search-input');
         const clearStateX = document.getElementById('clear-state-input');
-        const clearDistrictX = document.getElementById('clear-district-input');
         const clearPartyX = document.getElementById('clear-party-input');
         const clearSearchBtn = document.getElementById('clear-search');
         const committeeInput = document.getElementById('committee-select');
@@ -502,29 +487,6 @@
             }
         }
 
-        // District input handlers
-        districtInput.addEventListener('focus', () => showOptions(districtOptions, ALL_DISTRICTS, selectDistrict));
-        districtInput.addEventListener('input', () => {
-            const v = districtInput.value.trim().toLowerCase();
-            if (!v) {
-                showOptions(districtOptions, ALL_DISTRICTS, selectDistrict);
-                filterSeats();
-                toggleClear();
-                return;
-            }
-            showOptions(districtOptions, ALL_DISTRICTS.filter(o => o.toLowerCase().startsWith(v)), selectDistrict);
-            filterSeats();
-            toggleClear();
-        });
-        districtInput.addEventListener('blur', () => {
-            setTimeout(() => districtOptions.style.display = 'none', 100);
-        });
-        function selectDistrict(item) {
-            districtInput.value = item;
-            districtOptions.style.display = 'none';
-            filterSeats();
-            toggleClear();
-        }
 
         // Party input handlers
         partyInput.addEventListener('focus', () => showOptions(partyOptions, ALL_PARTY_OPTIONS, selectParty));
@@ -596,13 +558,15 @@
         }
 
         clearStateX.onclick = () => { stateInput.value = ''; filterSeats(); toggleClear(); stateInput.focus(); }
-        clearDistrictX.onclick = () => { districtInput.value = ''; filterSeats(); toggleClear(); districtInput.focus(); }
         clearPartyX.onclick = () => { partyInput.value = ''; filterSeats(); toggleClear(); partyInput.focus(); }
+        
         clearCommitteeX.onclick = () => { committeeInput.value = ''; filterSeats(); toggleClear(); committeeInput.focus(); }
         clearSubcommitteeX.onclick = () => { subcommitteeInput.value = ''; filterSeats(); toggleClear(); subcommitteeInput.focus(); }
         clearSearchX.onclick = () => { searchInput.value = ''; filterSeats(); toggleClear(); searchInput.focus(); }
+        
+        // Clear all filters and highlights
         clearSearchBtn.onclick = () => {
-            searchInput.value = stateInput.value = districtInput.value = partyInput.value = committeeInput.value = subcommitteeInput.value = '';
+            searchInput.value = stateInput.value = partyInput.value = committeeInput.value = subcommitteeInput.value = '';
             // Remove all highlights and selected states when clearing
             seatEls.forEach(({ seat }) => {
                 seat.classList.remove('highlight');
@@ -613,6 +577,7 @@
             // Directly set the highlighted seats count to show all seats
             seatsHighlighted.textContent = `Number of seats highlighted: ${seatEls.length}`;
             toggleClear();
+            searchInput.focus();
         }
         searchInput.addEventListener('input', () => { filterSeats(); toggleClear(); });
         stateInput.addEventListener('input', () => { filterSeats(); toggleClear(); });
@@ -620,7 +585,6 @@
         function toggleClear() {
             clearSearchX.style.display = searchInput.value ? 'block' : 'none';
             clearStateX.style.display = stateInput.value ? 'block' : 'none';
-            clearDistrictX.style.display = districtInput.value ? 'block' : 'none';
             clearPartyX.style.display = partyInput.value ? 'block' : 'none';
             clearCommitteeX.style.display = committeeInput.value ? 'block' : 'none';
             clearSubcommitteeX.style.display = subcommitteeInput.value ? 'block' : 'none';
@@ -637,10 +601,10 @@
                 members = data.filter(m => {
                     if (!m.terms?.length) return false;
                     const t = m.terms[m.terms.length - 1];
-                    return t.type === 'rep' && (!t.end || new Date(t.end) > now) && VOTING_STATES.has(t.state);
+                    return t.type === 'sen' && (!t.end || new Date(t.end) > now) && VOTING_STATES.has(t.state);
                 }).sort((a, b) => {
                     const aT = a.terms[a.terms.length - 1], bT = b.terms[b.terms.length - 1];
-                    return aT.state === bT.state ? (aT.district || 0) - (bT.district || 0) : aT.state.localeCompare(bT.state);
+                    return aT.state.localeCompare(bT.state);
                 });
                 // Annotate each member with their committee/subcommittee assignments
                 members.forEach(member => {
@@ -680,8 +644,8 @@
                 committeeNames = [];
                 subcommitteeNames = [];
                 committeesData.forEach(comm => {
-                    if ((comm.type === 'house' || comm.type === 'joint') && comm.name) committeeNames.push(comm.name);
-                    if ((comm.type === 'house' || comm.type === 'joint') && comm.subcommittees) {
+                    if ((comm.type === 'senate' || comm.type === 'joint') && comm.name) committeeNames.push(comm.name);
+                    if ((comm.type === 'senate' || comm.type === 'joint') && comm.subcommittees) {
                         comm.subcommittees.forEach(sub => {
                             if(sub.name) {
                                 const subId = comm.thomas_id + sub.thomas_id;
@@ -751,15 +715,31 @@
             });
         }
 
-        // Distribute seats evenly per row
+        // Distribute seats with fewer seats in inner rows to prevent overlap
         function distributeSeats(total) {
-            const perRow = Array(numberRows).fill(Math.floor(total / numberRows));
-            let rem = total - perRow.reduce((a, b) => a + b, 0);
-            for (let i = 0; rem > 0; i = (i + 1) % numberRows) {
-                perRow[i]++;
-                rem--;
+            // For small numbers, distribute with very few in inner rows
+            if (total <= 15) return [1, 2, Math.ceil(total/3), Math.ceil(total/2), total];
+
+            // For medium numbers, use a more gradual distribution
+            if (total <= 30) {
+                const base = Math.floor(total / 6);
+                return [1, base + 1, base * 2, base * 3, total - (base * 6) + base * 3];
             }
-            return perRow;
+
+            // For larger numbers, use a more aggressive distribution
+            const dist = [
+                Math.max(1, Math.floor(total * 0.05)),  // 5% in first row
+                Math.max(2, Math.floor(total * 0.15)),  // 15% in second row
+                Math.max(4, Math.floor(total * 0.25)),  // 25% in third row
+                Math.max(6, Math.floor(total * 0.25)),  // 25% in fourth row
+                0  // Remainder will be calculated
+            ];
+
+            // Calculate remaining seats for the outer row
+            const used = dist.reduce((a, b) => a + b, 0);
+            dist[4] = Math.max(0, total - used);
+
+            return dist;
         }
 
         // Draw the hemicycle with seats by party and row
@@ -767,62 +747,91 @@
             hemicycle.innerHTML = '';
             seatEls = [];
             const w = hemicycle.clientWidth, h = hemicycle.clientHeight;
-            const scale = (w - 50) / 700;
-            const startR = fullRadius * scale, rowGap = fullGap * scale;
+            const scale = (w - 50) / 500; // Adjusted scale for smaller number of seats
+            const startR = 50 * scale; // Start radius
+            const rowGap = 50 * scale; // Gap between rows
+            const numberRows = 5; // Reduced number of rows for Senate
             const radii = Array.from({ length: numberRows }, (_, i) => startR + i * rowGap);
-            const cx = w / 2, cy = h;
-            const baseGap = 0.03 * scale, totalArc = Math.PI;
-            let repStart = totalArc, repEnd = totalArc * 0.53 + baseGap,
-                vacStart = repEnd + baseGap, vacEnd = totalArc * 0.47 - baseGap,
-                demStart = vacEnd + baseGap, demEnd = 0;
-            if (scale < 0.55) {
-                repEnd = totalArc * 0.58 + baseGap * 0.6;
-                vacStart = repEnd + baseGap * 0.6;
-                vacEnd = totalArc * 0.42 - baseGap * 0.6;
-                demStart = vacEnd + baseGap * 0.6;
-            }
-            const reps = members.filter(m => m.terms[m.terms.length - 1].party === 'Republican'),
-                dems = members.filter(m => m.terms[m.terms.length - 1].party === 'Democrat'),
-                vacs = members.filter(m => !['Democrat', 'Republican'].includes(m.terms[m.terms.length - 1].party));
-            const repSeats = distributeSeats(reps.length), demSeats = distributeSeats(dems.length), vacSeats = distributeSeats(vacs.length);
+            // Center point adjusted higher for flat bottom hemicycle
+            const cx = w / 2, cy = h * 0.8;
+            const totalArc = Math.PI;
+
+            // Hemicycle with flat bottom
+            const baseGap = 0.05 * scale;
+
+            // Hemicycle layout with larger gap between parties
+            const gap = Math.PI * 0.2; // 20% gap between parties (increased from 10%)
+
+            // Republicans on the right (from 0 to (π - gap) * 0.5)
+            const repStart = 0;
+            const repEnd = (Math.PI - gap) * 0.5;
+
+            // Democrats on the left (from (π + gap) * 0.5 to π)
+            const demStart = (Math.PI + gap) * 0.5;
+            const demEnd = Math.PI;
+
+            // Filter members by party (only show Dems and Reps)
+            const reps = members.filter(m => m.terms[m.terms.length - 1].party === 'Republican');
+            const dems = members.filter(m => m.terms[m.terms.length - 1].party === 'Democrat');
+
+            // Distribute seats for each party
+            const repSeats = distributeSeats(reps.length);
+            const demSeats = distributeSeats(dems.length);
 
             function drawParty(mems, seatsPerRow, startA, endA) {
                 let idx = 0;
+
                 for (let r = 0; r < numberRows; r++) {
                     const rad = radii[r], sc = seatsPerRow[r];
-                    if (!sc) continue;
-                    const angleRange = Math.abs(startA - endA), step = sc > 1 ? angleRange / (sc - 1) : 0;
-                    for (let i = 0; i < sc; i++) {
-                        if (idx >= mems.length) break;
+                    if (!sc || idx >= mems.length) continue;
+
+                    // Calculate seat size based on row (smaller for inner rows)
+                    const seatSize = Math.max(scale * 10 * (0.8 + (r * 0.1)), 8);
+
+                    // Calculate angle range and step for this row with padding
+                    const angleRange = Math.abs(endA - startA);
+                    const minAngle = (seatSize * 1.5) / rad; // Minimum angle to prevent overlap
+                    const maxSeats = Math.max(1, Math.floor(angleRange / minAngle));
+                    const actualSeats = Math.min(sc, maxSeats, mems.length - idx);
+                    const step = actualSeats > 1 ? angleRange / (actualSeats - 1) : 0;
+
+                    for (let i = 0; i < sc && idx < mems.length; i++) {
                         const m = mems[idx];
                         const p = m.terms[m.terms.length - 1].party;
                         const cls = partyClass(p);
-                        const angle = startA > endA ? startA - step * i : startA + step * i;
-                        const x = cx + rad * Math.cos(angle), y = cy - rad * Math.sin(angle);
+
+                        // Calculate angle for this seat
+                        const angle = startA + (step * i);
+
+                        // Calculate position in semicircle
+                        const x = cx + rad * Math.cos(angle);
+                        const y = cy - rad * Math.sin(angle);
+
                         const seat = document.createElement('div');
                         seat.className = 'seat ' + cls;
                         seat.style.left = x + 'px';
                         seat.style.top = y + 'px';
                         seat.title = `${m.name.first} ${m.name.last} (${p})`;
-                        seat.style.width = seat.style.height = Math.max(scale * 15, 7) + 'px';
+                        seat.style.width = seat.style.height = seatSize + 'px';
+                        seat.style.boxShadow = '0 1px 3px rgba(0,0,0,0.2)';
+
                         seat.onclick = e => {
                             e.stopPropagation();
                             updateViewerCard(m);
                             seatEls.forEach(({ seat: s }) => {
                                 s.classList.remove('selected');
-                                s.classList.remove('highlight');
                             });
                             seat.classList.add('selected');
-                            seat.classList.add('highlight');
                         };
+
                         hemicycle.appendChild(seat);
                         seatEls.push({ seat, member: m });
                         idx++;
                     }
                 }
             }
+            // Draw Republicans (right side) and Democrats (left side)
             drawParty(reps, repSeats, repStart, repEnd);
-            drawParty(vacs, vacSeats, vacStart, vacEnd);
             drawParty(dems, demSeats, demStart, demEnd);
         }
 
@@ -831,15 +840,15 @@
             const stateName = STATE_FULL_NAMES[t.state] || t.state;
             viewerName.textContent = `${m.name.first} ${m.name.last}`;
             viewerParty.textContent = `Party: ${t.party}`;
-            viewerState.textContent = `State: ${stateName} District: ${t.district || 'At Large'}`;
-            const url = `representative.html?${m.id.bioguide}?source=house`;
+            viewerState.textContent = `State: ${stateName}`;
+            const url = `representative.html?${m.id.bioguide}?source=senate`;
             viewerLink.onclick = () => window.location.href = url;
-            document.getElementById('viewer-portrait').src = `https://clerk.house.gov/images/members/${m.id.bioguide}.jpg`;
+            document.getElementById('viewer-portrait').src = `https://raw.githubusercontent.com/argentargenticle/USA_Senate_Images/main/${m.id.bioguide}.jpg`;
             // Reset styles first
             viewerCard.style.backgroundColor = 'white';
             viewerCard.style.color = 'black';
             viewerCard.style.borderLeft = 'none';
-            
+
             if (t.party.toLowerCase() === 'democrat') {
                 viewerCard.style.borderLeft = '6px solid #0074D9';
             } else if (t.party.toLowerCase() === 'republican') {
@@ -865,7 +874,7 @@
                 if (p === 'Democrat') dc++;
                 else if (p === 'Republican') rc++;
             });
-            const filled = dc + rc, vac = 435 - filled;
+            const filled = dc + rc, vac = 100 - filled;
             summary.innerHTML = `Republicans: ${rc} — Democrats: ${dc} — Vacant: ${vac}` +
                 (vac > 0 ? ' — <a href="https://ballotpedia.org/Special_elections_to_the_119th_United_States_Congress_(2025-2026)" target="_blank">See upcoming special elections</a>' : '');
             simpleMar.innerText = `Simple Majority (of ${filled} filled seats): ${Math.floor(filled / 2) + 1}`;
@@ -881,13 +890,17 @@
 
         function filterSeats() {
             const sFilter = stateInput.value.trim().toUpperCase();
-            const dFilter = districtInput.value.trim().toLowerCase();
             const pFilter = partyInput.value.trim().toLowerCase();
             const cFilterRaw = committeeInput.value.trim();
             const cFilter = normalizeName(cFilterRaw);
             const nFilter = searchInput.value.toLowerCase().trim();
             const subcFilterRaw = subcommitteeInput.value.trim();
             const subcFilter = subcFilterRaw.toLowerCase();
+            
+            // Update clear button visibility for inputs
+            clearPartyX.style.display = pFilter ? 'block' : 'none';
+            clearCommitteeX.style.display = cFilterRaw ? 'block' : 'none';
+            clearSubcommitteeX.style.display = subcFilterRaw ? 'block' : 'none';
 
             const stateMap = Object.fromEntries(Object.entries(ABBR_TO_FULL).map(([k, v]) => [v.toUpperCase(), k]));
             let stFilter = "";
@@ -897,13 +910,11 @@
             seatEls.forEach(({ seat, member }) => {
                 const t = member.terms[member.terms.length - 1];
                 const ms = t.state.toUpperCase();
-                const md = t.district ? t.district.toString().toLowerCase() : "at large";
                 const mp = t.party.toLowerCase();
                 const fn = (member.name.first + " " + member.name.last).toLowerCase();
 
                 const sMatch = !stFilter || ms === stFilter;
                 const nMatch = !nFilter || fn.includes(nFilter);
-                const dMatch = !dFilter || md === dFilter;
                 const pMatch = !pFilter || mp === pFilter;
                 let cMatch = true;
                 if (cFilter && member.committees) {
@@ -923,24 +934,24 @@
                         return comm.isSubcommittee && comm.name.toLowerCase().includes(subcFilter);
                     });
                 }
-                if (sMatch && nMatch && dMatch && pMatch && cMatch && subcMatch) {
+                if (sMatch && nMatch && pMatch && cMatch && subcMatch) {
                     seat.style.opacity = '1';
-                    // Only add highlight if it's not already selected
-                    if (!seat.classList.contains('selected')) {
-                        seat.classList.add('highlight');
-                    }
+                    seat.classList.add('highlight');
                 } else {
                     seat.style.opacity = '0.15';
-                    // Don't remove highlight if it's selected
-                    if (!seat.classList.contains('selected')) {
-                        seat.classList.remove('highlight');
-                    }
+                    seat.classList.remove('highlight');
                 }
             });
 
             updateHighlightedSeatsCount();
 
-            if (nFilter === '' && !stFilter && !dFilter && !pFilter && !cFilter) return;
+            // Clear all highlights when all filters are cleared
+            if (nFilter === '' && !stFilter && !dFilter && !pFilter && !cFilter) {
+                seatEls.forEach(({ seat }) => {
+                    seat.classList.remove('highlight');
+                });
+                return;
+            }
 
             let found = false;
             seatEls.forEach(({ seat, member }) => {
