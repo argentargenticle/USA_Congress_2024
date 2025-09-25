@@ -50,20 +50,20 @@
         .democrat {
             background-color: #0074D9; /* Blue for Democrats */
         }
-        
+
         /* Inverted colors for selected seats */
         .democrat.selected {
             background-color: white;
             border-color: #0074D9;
             box-shadow: 0 0 0 1px #0074D9;
         }
-        
+
         .republican.selected {
             background-color: white;
             border-color: #e43030;
             box-shadow: 0 0 0 1px #e43030;
         }
-        
+
         /* Keep yellow highlight for search results */
         .highlight {
             box-shadow: 0 0 10px 3px yellow !important;
@@ -284,15 +284,15 @@
     </style>
 </head>
 <body>
-    <nav>
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="senate.html">Senate</a></li>
-            <li><a href="committee.html">Committees</a></li>
-            <li><a href="faq.html">FAQ</a></li>
-        </ul>
-    </nav>
-    <h1 id="header">USA Congress - House 2025 - 119th Congress</h1>
+<nav>
+    <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="senate.html">Senate</a></li>
+        <li><a href="committee.html">Committees</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+    </ul>
+</nav>
+<h1 id="header">USA Congress - House 2025 - 119th Congress</h1>
 <div id="search-container">
     <div class="input-wrapper">
         <input type="text" id="search-input" placeholder="Search representative by name..." />
@@ -594,10 +594,50 @@
             toggleClear();
         }
 
-        clearStateX.onclick = () => { stateInput.value = ''; filterSeats(); toggleClear(); stateInput.focus(); }
-        clearDistrictX.onclick = () => { districtInput.value = ''; filterSeats(); toggleClear(); districtInput.focus(); }
-        clearPartyX.onclick = () => { partyInput.value = ''; filterSeats(); toggleClear(); partyInput.focus(); }
-        clearCommitteeX.onclick = () => { committeeInput.value = ''; filterSeats(); toggleClear(); committeeInput.focus(); }
+        clearStateX.onclick = () => { 
+            stateInput.value = ''; 
+            // Clear all search highlights when clearing the state
+            seatEls.forEach(({ seat }) => {
+                seat.classList.remove('highlight');
+                seat.style.opacity = '1';
+            });
+            filterSeats(); 
+            toggleClear(); 
+            stateInput.focus(); 
+        }
+        clearDistrictX.onclick = () => { 
+            districtInput.value = ''; 
+            // Clear highlights when clearing the district
+            seatEls.forEach(({ seat }) => {
+                seat.classList.remove('highlight');
+                seat.style.opacity = '1';
+            });
+            filterSeats(); 
+            toggleClear(); 
+            districtInput.focus(); 
+        }
+        clearPartyX.onclick = () => { 
+            partyInput.value = ''; 
+            // Clear highlights when clearing the party
+            seatEls.forEach(({ seat }) => {
+                seat.classList.remove('highlight');
+                seat.style.opacity = '1';
+            });
+            filterSeats(); 
+            toggleClear(); 
+            partyInput.focus(); 
+        }
+        clearCommitteeX.onclick = () => { 
+            committeeInput.value = ''; 
+            // Clear highlights when clearing the committee
+            seatEls.forEach(({ seat }) => {
+                seat.classList.remove('highlight');
+                seat.style.opacity = '1';
+            });
+            filterSeats(); 
+            toggleClear(); 
+            committeeInput.focus(); 
+        }
         clearSubcommitteeX.onclick = () => { subcommitteeInput.value = ''; filterSeats(); toggleClear(); subcommitteeInput.focus(); }
         clearSearchX.onclick = () => { searchInput.value = ''; filterSeats(); toggleClear(); searchInput.focus(); }
         clearSearchBtn.onclick = () => {
@@ -807,12 +847,19 @@
                         seat.onclick = e => {
                             e.stopPropagation();
                             updateViewerCard(m);
+
+                            // Toggle selection state
+                            const wasSelected = seat.classList.contains('selected');
+
+                            // Clear selection from all seats
                             seatEls.forEach(({ seat: s }) => {
                                 s.classList.remove('selected');
-                                s.classList.remove('highlight');
                             });
-                            seat.classList.add('selected');
-                            seat.classList.add('highlight');
+
+                            // If this seat wasn't selected before, select it now
+                            if (!wasSelected) {
+                                seat.classList.add('selected');
+                            }
                         };
                         hemicycle.appendChild(seat);
                         seatEls.push({ seat, member: m });
@@ -838,7 +885,7 @@
             viewerCard.style.backgroundColor = 'white';
             viewerCard.style.color = 'black';
             viewerCard.style.borderLeft = 'none';
-            
+
             if (t.party.toLowerCase() === 'democrat') {
                 viewerCard.style.borderLeft = '6px solid #0074D9';
             } else if (t.party.toLowerCase() === 'republican') {
@@ -847,12 +894,19 @@
             viewerCard.style.display = 'block';
         }
         document.addEventListener('click', (e) => {
-            // Only hide if clicking outside the viewer card
-            if (!viewerCard.contains(e.target)) {
+            // Only hide if clicking outside the viewer card and not on a seat
+            if (!viewerCard.contains(e.target) && !e.target.closest('.seat')) {
                 viewerCard.style.display = 'none';
                 seatEls.forEach(({ seat: s }) => {
+                    // Only remove selection, keep highlight for search results
                     s.classList.remove('selected');
-                    // Don't remove highlight here to keep search results visible
+                });
+            } else if (!viewerCard.contains(e.target)) {
+                // Clicked on a seat but not the viewer card
+                seatEls.forEach(({ seat: s }) => {
+                    if (s !== e.target && !e.target.contains(s)) {
+                        s.classList.remove('selected');
+                    }
                 });
             }
         });
@@ -924,16 +978,14 @@
                 }
                 if (sMatch && nMatch && dMatch && pMatch && cMatch && subcMatch) {
                     seat.style.opacity = '1';
-                    // Only add highlight if it's not already selected
-                    if (!seat.classList.contains('selected')) {
-                        seat.classList.add('highlight');
+                    // Add search highlight if it matches search criteria
+                    if (nFilter || stFilter) {
+                        seat.classList.add('search-highlight');
                     }
                 } else {
                     seat.style.opacity = '0.15';
-                    // Don't remove highlight if it's selected
-                    if (!seat.classList.contains('selected')) {
-                        seat.classList.remove('highlight');
-                    }
+                    // Only remove search highlight, not selection
+                    seat.classList.remove('search-highlight');
                 }
             });
 
