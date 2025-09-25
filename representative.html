@@ -783,7 +783,17 @@
         }
         document.getElementById("birthday").textContent=formatLongDate(legislator.bio?.birthday);
         document.getElementById("age").textContent=calculateAge(legislator.bio?.birthday);
-        document.getElementById("chamber").textContent=t.type==="rep"?"House":"Senate";
+        const chamber = t.type === "rep" ? "House" : "Senate";
+        document.getElementById("chamber").textContent = chamber;
+        
+        // Hide district info for Senate
+        const districtItem = document.querySelector('.info-item:has(#districtNum)');
+        if (chamber === "Senate" && districtItem) {
+            districtItem.style.display = 'none';
+        } else if (districtItem) {
+            districtItem.style.display = 'flex'; // Ensure it's visible for House
+        }
+        
         // Set party text and update color scheme
         document.getElementById("party").textContent = t.party;
         // Update --secondary color and party icon based on party
