@@ -4,19 +4,430 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Legislator Info with Committee Roles</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
-        body { font-size: 18px; }
-        .info { display: inline-block; vertical-align: top; }
-        #menu ul { list-style-type: none; margin: 10px 0px; padding: 0; display: flex; }
-        #menu ul li a { display: inline-block; color: black; background-color: white; padding:8px 16px; border-radius: 50px; margin: 0px 3px; text-decoration: none; }
-        #links ul { list-style-type: none; margin: 10px 0px; padding: 0; display: flex; background-color: #d3d3d3; border-radius: 25px; padding: 10px; }
-        #links ul li a { color: black; text-decoration: none; margin: 0px 10px; }
-        #links ul li a:hover { color: white; }
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #f8f9fa;
+            --dark: #2c3e50;
+            --gray: #6c757d;
+            --light-gray: #e9ecef;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
 
-        @media only screen and (max-width: 820px) {
-            body { margin: 0px 10px; }
-        }@media only screen and (min-width: 820px){
-            body { margin: 0px 120px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background-color: var(--light);
+            font-size: 16px;
+            padding: 0;
+            margin: 0 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 0 0;
+        }
+
+        /* Header & Navigation */
+        #menu {
+            background-color: var(--primary);
+            padding: 1rem 20px;
+            margin: 0 -20px 0;
+        }
+
+        #menu ul {
+            list-style-type: none;
+            display: flex;
+            gap: 1rem;
+            margin: 0;
+            padding: 0;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #menu ul li a {
+            display: inline-block;
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        #menu ul li a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Profile Section */
+        .profile-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin: 2rem 0;
+            align-items: flex-start;
+        }
+
+        .portrait-container {
+            flex: 0 0 250px;
+            position: relative;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            background: white;
+        }
+
+        #portraitImg {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: var(--transition);
+        }
+
+        .portrait-container:hover #portraitImg {
+            transform: scale(1.02);
+        }
+
+        .info-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        .info-card h3, .committee-section h2 {
+            color: var(--primary);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--light-gray);
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .info-card h3 i, .committee-section h2 i {
+            color: var(--secondary);
+            font-size: 1.4em;
+            width: 1.5em;
+            text-align: center;
+        }
+
+        /* Committee Section Styles */
+        .committee-section {
+            margin-top: 2rem;
+        }
+
+        .committee-section h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .section-subtitle {
+            color: var(--gray);
+            margin: -1rem 0 1.5rem;
+            font-style: italic;
+            font-size: 0.95rem;
+        }
+
+        .committee-section h3 {
+            color: var(--primary);
+            margin: 1.5rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+        }
+
+        .committee-section h3 i {
+            color: var(--secondary);
+            width: 1.5em;
+            text-align: center;
+        }
+
+        .role-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem 1.5rem;
+        }
+
+        .role-list li {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: var(--transition);
+            border-left: 3px solid var(--secondary);
+        }
+
+        .role-list li:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .role-list li i {
+            color: var(--secondary);
+            width: 1.5em;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .empty-state {
+            color: var(--gray);
+            font-style: italic;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }
+        }
+
+        .info-item {
+            background: var(--light);
+            padding: 1.25rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            border-left: 3px solid var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            height: 100%;
+        }
+
+        .info-icon {
+            font-size: 1.25rem;
+            color: var(--secondary);
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-item strong {
+            display: block;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-item p {
+            color: var(--dark);
+            font-size: 1.1rem;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .info-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+
+        .info p {
+            margin: 0.75rem 0;
+            color: var(--dark);
+        }
+
+        .info strong {
+            color: var(--primary);
+            margin-right: 0.5rem;
+        }
+
+        /* Links Section */
+        #links {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin: 2rem 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        #links h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        #links ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin: 0;
+            padding: 0;
+            background: none;
+            border-radius: 0;
+            padding: 0;
+        }
+
+        #links ul li a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--light-gray);
+            border-radius: 50px;
+            color: var(--dark);
+            text-decoration: none;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            font-weight: 500;
+            border: 1px solid rgba(0,0,0,0.05);
+            margin: 0;
+        }
+
+        #links ul li a:hover {
+            background: var(--secondary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Info Button */
+        #moreInfoBtn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: var(--transition);
+            margin: 0.5rem 0;
+        }
+
+        #moreInfoBtn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        #moreInfoBtn:active {
+            transform: translateY(0);
+        }
+
+        #linksExplanation {
+            display: none;
+            background: var(--light);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: var(--box-shadow);
+        }
+
+        #linksExplanation p {
+            margin: 0.5rem 0;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Committee Section */
+        #committeeAssignments {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin: 3rem 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        #committeeAssignments h2 {
+            color: var(--primary);
+            margin-bottom: 2rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        #committeeAssignments h3 {
+            color: var(--primary);
+            margin: 1.5rem 0 1rem;
+            font-size: 1.25rem;
+        }
+
+        #committeeAssignments ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem;
+        }
+
+        #committeeAssignments ul li {
+            background: var(--light);
+            padding: 1rem 1.25rem;
+            margin: 0.5rem 0;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            border-left: 3px solid var(--secondary);
+        }
+
+        #committeeAssignments ul li:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .profile-container {
+                flex-direction: column;
+            }
+            
+            .portrait-container {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto;
+            }
+            
+            .info {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            #links ul {
+                flex-direction: column;
+            }
+            
+            #links ul li a {
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -26,49 +437,140 @@
         <li id="backLink"><a href="#">Back</a></li>
     </ul>
 </div>
-<div style="display:inline-block;">
-    <img id="portraitImg" alt="Legislator Portrait" style="width:250px; height:auto;" />
-</div>
-<div class="info">
-    <span id="officialFullName">Loading...</span>
-    <div id="nicknameContainer" style="display:none"><p><strong>Nickname:</strong> <span id="nickname"></span></p></div>
-    <br /><strong>State:</strong> <span id="stateFullName">Loading...</span>
-    <br /><strong>District #:</strong> <span id="districtNum"></span>
-    <br /><strong>Party:</strong> <span id="party">Loading...</span>
-    <br /><strong>Term:</strong> <span id="termStart">Loading...</span> - <span id="termEnd">Loading...</span>
-    <br /><strong>Time until term ends:</strong> <span id="termCountdown">Loading...</span>
-    <br /><strong>Chamber:</strong> <span id="chamber">Loading...</span>
-</div>
-<div id="links">
-    <ul>
-        <li><span id="ballotpedia">Loading...</span></li>
-        <li><span id="votesmart">Loading...</span></li>
-        <li><span id="opensecrets">Loading...</span></li>
-        <li><span id="govtrack">Loading...</span></li>
-        <li><span id="unusualWhales">Loading...</span></li>
-        <li><span id="trackAIPAC">Loading...</span></li>
-    </ul>
-</div>
-<button id="moreInfoBtn" style="margin-top: 10px; padding: 8px 16px; border-radius: 12px; cursor: pointer;">More Info about Links</button>
-<div id="linksExplanation" style="display:none; background-color: #f0f0f0; border-radius: 12px; padding: 15px; margin-top: 10px; font-size: 16px; max-width: 900px;">
-    <p><strong>Ballotpedia:</strong> An online encyclopedia of American politics and elections.</p>
-    <p><strong>Vote Smart:</strong> Provides biographical, voting record, and interest group ratings for politicians. Users get 5 free views per day before needing to create a free account to continue viewing pages.</p>
-    <p><strong>Open Secrets:</strong> Tracks campaign contributions and lobbying expenditures.</p>
-    <p><strong>GovTrack:</strong> Tracks bills, votes, and legislator profiles in Congress.</p>
-    <p><strong>Unusual Whales:</strong> Tracks unusual options trading activity related to politicians.</p>
-    <p><strong>Track AIPAC:</strong> Tracks campaign contributions and political influence related to the American Israel Public Affairs Committee.</p>
-</div>
-<p><strong>Birthday:</strong> <span id="birthday">Loading...</span> <strong>Age:</strong> <span id="age">Loading...</span></p>
-<div id="startDates"></div>
-<div id="tenure"></div>
-<div id="committeeAssignments" style="margin-top:20px;">
-    <h2>Current Committee and Subcommittee Assignments</h2>
-    <h3>Chairman</h3>
-    <ul id="chairmanList">Loading...</ul>
-    <h3>Ranking Member</h3>
-    <ul id="rankingMemberList">Loading...</ul>
-    <h3>Member</h3>
-    <ul id="memberList">Loading...</ul>
+<div class="container">
+    <div class="profile-container">
+        <div class="portrait-container">
+            <img id="portraitImg" alt="Legislator Portrait" />
+        </div>
+        <div class="info">
+            <h1 id="officialFullName">Loading...</h1>
+            <div id="nicknameContainer" class="meta-tag" style="display:none">
+                <strong>Nickname:</strong> <span id="nickname"></span>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-flag-usa"></i></div>
+                    <div class="info-content">
+                        <strong>State</strong>
+                        <p id="stateFullName">Loading...</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="info-content">
+                        <strong>District</strong>
+                        <p id="districtNum">-</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon" id="partyIcon"><i class="fas fa-landmark"></i></div>
+                    <div class="info-content">
+                        <strong>Party</strong>
+                        <p id="party">Loading...</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="far fa-calendar-alt"></i></div>
+                    <div class="info-content">
+                        <strong>Term</strong>
+                        <p><span id="termStart">Loading</span> - <span id="termEnd">Loading</span></p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="far fa-clock"></i></div>
+                    <div class="info-content">
+                        <strong>Time Remaining</strong>
+                        <p id="termCountdown">Loading...</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon"><i class="fas fa-university"></i></div>
+                    <div class="info-content">
+                        <strong>Chamber</strong>
+                        <p id="chamber">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="links">
+        <h2>External Resources</h2>
+        <ul>
+            <li><a href="#" id="ballotpedia" target="_blank" rel="noopener noreferrer">Ballotpedia</a></li>
+            <li><a href="#" id="votesmart" target="_blank" rel="noopener noreferrer">Vote Smart</a></li>
+            <li><a href="#" id="opensecrets" target="_blank" rel="noopener noreferrer">Open Secrets</a></li>
+            <li><a href="#" id="govtrack" target="_blank" rel="noopener noreferrer">GovTrack</a></li>
+            <li><a href="#" id="unusualWhales" target="_blank" rel="noopener noreferrer">Unusual Whales</a></li>
+            <li><a href="#" id="trackAIPAC" target="_blank" rel="noopener noreferrer">Track AIPAC</a></li>
+        </ul>
+    </div>
+    
+    <button id="moreInfoBtn">
+        <i class="fas fa-info-circle"></i> About These Links
+    </button>
+    
+    <div id="linksExplanation">
+        <p><strong>Ballotpedia:</strong> An online encyclopedia of American politics and elections.</p>
+        <p><strong>Vote Smart:</strong> Provides biographical, voting record, and interest group ratings for politicians. Users get 5 free views per day before needing to create a free account to continue viewing pages.</p>
+        <p><strong>OpenSecrets:</strong> Tracks campaign contributions and lobbying expenditures.</p>
+        <p><strong>GovTrack:</strong> Tracks bills, votes, and legislator profiles in Congress.</p>
+        <p><strong>Unusual Whales:</strong> Tracks unusual options trading activity related to politicians.</p>
+        <p><strong>Track AIPAC:</strong> Tracks campaign contributions and political influence related to the American Israel Public Affairs Committee.</p>
+    </div>
+    <div class="info-card">
+        <h3><i class="fas fa-user-circle"></i> Biographical Information</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-icon"><i class="fas fa-birthday-cake"></i></div>
+                <div class="info-content">
+                    <strong>Birthday</strong>
+                    <p id="birthday">Loading...</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon"><i class="fas fa-user-clock"></i></div>
+                <div class="info-content">
+                    <strong>Age</strong>
+                    <p id="age">Loading...</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon"><i class="fas fa-hourglass-half"></i></div>
+                <div class="info-content">
+                    <strong>Time in Office</strong>
+                    <p id="tenure">Loading...</p>
+                </div>
+            </div>
+            <div class="info-item">
+                <div class="info-icon"><i class="fas fa-flag"></i></div>
+                <div class="info-content">
+                    <strong>Started in Congress</strong>
+                    <p id="startDates">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="committeeAssignments" class="committee-section">
+        <h2><i class="fas fa-tasks"></i> Committee Assignments</h2>
+        <p class="section-subtitle">Current committee and subcommittee roles</p>
+        
+        <h3><i class="fas fa-gavel"></i> Chairman</h3>
+        <ul id="chairmanList" class="role-list">
+            <li class="empty-state"><i class="fas fa-info-circle"></i> No chairman roles</li>
+        </ul>
+        
+        <h3><i class="fas fa-user-tie"></i> Ranking Member</h3>
+        <ul id="rankingMemberList" class="role-list">
+            <li class="empty-state"><i class="fas fa-info-circle"></i> No ranking member roles</li>
+        </ul>
+        
+        <h3><i class="fas fa-users"></i> Member</h3>
+        <ul id="memberList" class="role-list">
+            <li class="empty-state"><i class="fas fa-info-circle"></i> No member roles</li>
+        </ul>
+    </div>
 </div>
 <script>
     const votingStates = new Set([
@@ -88,14 +590,22 @@
         "WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"
     };
 
-    document.getElementById("moreInfoBtn").addEventListener("click", function() {
-        const explanationDiv = document.getElementById("linksExplanation");
-        if (explanationDiv.style.display === "none") {
-            explanationDiv.style.display = "block";
-            this.textContent = "Less Info";
-        } else {
-            explanationDiv.style.display = "none";
-            this.textContent = "More Info";
+    // Toggle for info button
+    document.addEventListener('DOMContentLoaded', function() {
+        const infoButton = document.getElementById('moreInfoBtn');
+        const infoContent = document.getElementById('linksExplanation');
+        
+        if (infoButton && infoContent) {
+            infoButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (infoContent.style.display === 'none' || !infoContent.style.display) {
+                    infoContent.style.display = 'block';
+                    this.textContent = 'Less Info';
+                } else {
+                    infoContent.style.display = 'none';
+                    this.textContent = 'More Info';
+                }
+            });
         }
     });
 
@@ -207,19 +717,22 @@
     const queryString = window.location.search.slice(1);
     const [bioguideId, sourceParam] = queryString.split('?');
     const source = sourceParam ? sourceParam.split('=')[1] : 'house'; // Default to house if no source specified
-    
+
     // Set the back link based on source
     const backLink = document.getElementById('backLink');
     if (source === 'senate') {
-        backLink.innerHTML = '<a href="senate.html">Full USA Congressional Senate</a>';
+        backLink.innerHTML = '<a href="senate.html"><i class="fas fa-arrow-left"></i> Back to Senate</a>';
+    } else if (source === 'house') {
+        backLink.innerHTML = '<a href="house.html"><i class="fas fa-arrow-left"></i> Back to House</a>';
     } else {
-        backLink.innerHTML = '<a href="house.html">Full USA Congressional House</a>';
+        // Handle committee source (thomas_id)
+        backLink.innerHTML = `<a href="committee-individual.html?thomas_id=${source}"><i class="fas fa-arrow-left"></i> Back to Committee</a>`;
     }
-    
+
     // Initialize variables
     let stateAbbr = "N/A";
     let districtNum = "N/A";
-    
+
     // These will be set after we find the legislator
     let currentState = "";
     let currentDistrict = "";
@@ -233,14 +746,14 @@
 
         // Find legislator by bioguide ID
         let legislator = legislatorsData.find(leg => leg.id.bioguide === bioguideId);
-        
+
         if (legislator) {
             const term = legislator.terms[legislator.terms.length-1];
             stateAbbr = term.state;
             districtNum = term.district ? term.district.toString() : "N/A";
             currentState = stateNames[stateAbbr] || "Unknown";
             currentDistrict = districtNum;
-            
+
             // Update the UI with state and district info
             document.getElementById("stateFullName").textContent = currentState;
             document.getElementById("districtNum").textContent = currentDistrict;
@@ -271,24 +784,47 @@
         document.getElementById("birthday").textContent=formatLongDate(legislator.bio?.birthday);
         document.getElementById("age").textContent=calculateAge(legislator.bio?.birthday);
         document.getElementById("chamber").textContent=t.type==="rep"?"House":"Senate";
-        document.getElementById("party").textContent=t.party;
+        // Set party text and update color scheme
+        document.getElementById("party").textContent = t.party;
+        // Update --secondary color and party icon based on party
+        const root = document.documentElement;
+        const partyIcon = document.getElementById("partyIcon");
+        if (t.party === "Republican") {
+            root.style.setProperty('--secondary', '#E04B52'); // Republican red
+            partyIcon.innerHTML = '<i class="fas fa-elephant"></i>';
+        } else if (t.party === "Democrat") {
+            root.style.setProperty('--secondary', '#5B8FF5'); // Democrat blue
+            partyIcon.innerHTML = '<i class="fas fa-democrat"></i>';
+        } else {
+            root.style.setProperty('--secondary', '#9B59B6'); // Independent purple
+            partyIcon.innerHTML = '<i class="fas fa-star"></i>';
+        }
 
-        document.getElementById("ballotpedia").innerHTML=linkifyBallotpediaOrName(legislator.id.ballotpedia,wikipediaName,officialName);
-        document.getElementById("votesmart").innerHTML=linkifyVoteSmart(legislator.id.votesmart);
-        document.getElementById("opensecrets").innerHTML=linkifyOpenSecrets(legislator.id.opensecrets,officialName);
-        document.getElementById("govtrack").innerHTML=linkifyGovTrack(legislator.id.govtrack);
-        document.getElementById("unusualWhales").innerHTML=linkifyUnusualWhales(wikipediaName, officialName);
-        document.getElementById("trackAIPAC").innerHTML=linkifyTrackAIPAC(fullStateName, wikipediaName, officialName);
+        // Set up external resource links
+        const setLink = (id, url, text) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.href = url;
+                element.textContent = text || id.charAt(0).toUpperCase() + id.slice(1);
+            }
+        };
+
+        setLink("ballotpedia", `https://ballotpedia.org/${encodeURIComponent(wikipediaName || officialName.replace(/ /g, '_'))}`, "Ballotpedia");
+        if (legislator.id.votesmart) setLink("votesmart", `https://justfacts.votesmart.org/candidate/biography/${legislator.id.votesmart}`, "Vote Smart");
+        if (legislator.id.opensecrets) setLink("opensecrets", `https://www.opensecrets.org/members-of-congress/${officialName.replace(/ /g, '-')}/summary?cid=${legislator.id.opensecrets}`, "OpenSecrets");
+        if (legislator.id.govtrack) setLink("govtrack", `https://www.govtrack.us/congress/members/${legislator.id.govtrack}`, "GovTrack");
+        setLink("unusualWhales", `https://unusualwhales.com/politics/profile/${encodeURIComponent(officialName)}`, "Unusual Whales");
+        setLink("trackAIPAC", `https://www.trackaipac.com/states/${stateAbbr.toLowerCase()}?rq=${encodeURIComponent(officialName)}`, "Track AIPAC");
 
         const termStart=formatTermDate(t.start), termEnd=formatTermDate(t.end);
         document.getElementById("termStart").textContent=termStart;
         document.getElementById("termEnd").textContent=termEnd;
         document.getElementById("termCountdown").textContent=calculateCountdown(t.end);
 
-        const firstTerm=legislator.terms[0].start;
-        const tenureCongress=calculateTenure(firstTerm);
-        document.getElementById("startDates").innerHTML=`<p><strong>Started in Congress:</strong> ${formatLongDate(firstTerm)}</p>`;
-        document.getElementById("tenure").innerHTML=`<p><strong>Time in Congress:</strong> ${tenureCongress}</p>`;
+        const firstTerm = legislator.terms[0].start;
+        const tenureCongress = calculateTenure(firstTerm);
+        document.getElementById("startDates").textContent = formatLongDate(firstTerm);
+        document.getElementById("tenure").textContent = tenureCongress;
 
         document.body.style.backgroundColor = t.party==="Republican"?"#ffcccc":t.party==="Democrat"?"#cce5ff":"";
 

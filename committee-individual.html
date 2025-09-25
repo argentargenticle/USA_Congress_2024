@@ -68,6 +68,24 @@
         .member-info {
             flex: 1;
         }
+        
+        .more-info-link {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease-in-out;
+            margin-top: 8px;
+        }
+        
+        .more-info-link:hover {
+            background-color: #0056b3;
+            text-decoration: none;
+        }
         .majority {
             border-left: 4px solid #ff4d4d;
         }
@@ -336,7 +354,7 @@
                         const memberType = bioguideToType[member.bioguide];
                         if (memberType === 'sen') {
                             // For Senators, first try GitHub, then fall back to vote-usa.org
-                            imageUrl = `https://raw.githubusercontent.com/unitedstates/images/refs/heads/gh-pages/congress/450x550/${member.bioguide}.jpg`;
+                            imageUrl = `https://raw.githubusercontent.com/argentargenticle/USA_Senate_Images/refs/heads/main/${member.bioguide}.jpg`;
                             
                             // Prepare fallback URL in case GitHub image fails
                             const state = bioguideToState[member.bioguide] || '';
@@ -344,7 +362,6 @@
                             const lastName = nameParts[nameParts.length - 1];
                             const firstName = nameParts[0];
                             const imageName = `${state}${lastName}${firstName}`.replace(/[^a-z0-9]/gi, '');
-                            fallbackImageUrl = `https://vote-usa.org/Image.aspx?Id=${imageName}&Col=Profile300&Def=Profile300`;
                         } else {
                             // Use Clerk of the House for Representatives
                             imageUrl = `https://clerk.house.gov/images/members/${member.bioguide}.jpg`;
@@ -362,6 +379,7 @@
                     <p><strong>Party:</strong> ${member.party === 'majority' ? 'Majority' : 'Minority'}</p>
                     ${stateFullName ? `<p><strong>State:</strong> ${stateFullName}</p>` : ''}
                     <p><strong>Rank:</strong> ${member.rank}</p>
+                    ${member.bioguide ? `<a href="representative.html?${member.bioguide}?source=${encodeURIComponent(thomasId)}" class="more-info-link">More Info</a>` : ''}
                 </div>
             `;
                     return memberCard;
