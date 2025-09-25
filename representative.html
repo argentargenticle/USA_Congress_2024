@@ -844,7 +844,7 @@
 
         // Set portrait image source based on source parameter
         const portraitImg = document.getElementById("portraitImg");
-        if (source === 'senate') {
+        if (source === 'senate' || source === 'SSAP') {
             portraitImg.src = `https://raw.githubusercontent.com/argentargenticle/USA_Senate_Images/refs/heads/main/${legislator.id.bioguide}.jpg`;
         } else {
             portraitImg.src = `https://clerk.house.gov/images/members/${legislator.id.bioguide}.jpg`;
