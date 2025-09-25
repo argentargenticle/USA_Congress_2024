@@ -826,7 +826,11 @@
         document.getElementById("startDates").textContent = formatLongDate(firstTerm);
         document.getElementById("tenure").textContent = tenureCongress;
 
-        document.body.style.backgroundColor = t.party==="Republican"?"#ffcccc":t.party==="Democrat"?"#cce5ff":"";
+        // Set background color based on party
+        document.body.style.backgroundColor = 
+            t.party === "Republican" ? "#ffcccc" : 
+            t.party === "Democrat" ? "#cce5ff" :
+            "#f0e6ff"; // Light purple for independents/other
 
         // Set portrait image source based on source parameter
         const portraitImg = document.getElementById("portraitImg");

@@ -72,6 +72,14 @@
         .republican {
             background: #FF4136;
         }
+        .independent {
+            background: #800080; /* Purple for Independents */
+        }
+        .independent.selected {
+            background-color: white;
+            border-color: #800080;
+            box-shadow: 0 0 0 1px #800080;
+        }
         .vacant {
             background: #AAAAAA;
         }
@@ -425,7 +433,12 @@
         let committeeNames = [];
         let subcommitteeNames = [];
 
-        function partyClass(p){ return p==='Democrat'?'democrat':p==='Republican'?'republican':'vacant'; }
+        function partyClass(p){ 
+            if (!p) return 'vacant';
+            const party = p.toLowerCase();
+            if (party.includes('independent')) return 'independent';
+            return party === 'democrat' ? 'democrat' : party === 'republican' ? 'republican' : 'vacant';
+        }
 
         function showOptions(container, items, onClick){
             container.innerHTML='';
@@ -783,7 +796,7 @@
                     reps.push(member);
                 } 
                 else if (term.party === 'Democrat' || 
-                        (term.party === 'Independent' && 
+                        (term.party === 'Independent' &&
                          (term.caucus === 'Democrat' || !term.caucus))) {
                     // Default Independents to Democrat side if no caucus specified
                     dems.push(member);
@@ -792,7 +805,7 @@
                     others.push(member);
                 }
             });
-            
+
             // Log any members that didn't fit the main categories
             if (others.length > 0) {
                 console.log('Members not in main parties:', others.map(m => ({
@@ -881,6 +894,8 @@
                 viewerCard.style.borderLeft = '6px solid #0074D9';
             } else if (t.party.toLowerCase() === 'republican') {
                 viewerCard.style.borderLeft = '6px solid #e43030';
+            } else if (t.party.toLowerCase() === 'independent') {
+                viewerCard.style.borderLeft = '6px solid #800080';
             }
             viewerCard.style.display = 'block';
         }
